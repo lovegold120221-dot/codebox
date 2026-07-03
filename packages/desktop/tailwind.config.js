@@ -18,7 +18,11 @@ export default {
           purple: '#8b5cf6',
           green: '#10b981',
           red: '#ef4444',
+          yellow: '#f59e0b',
+          cyan: '#06b6d4',
+          pink: '#ec4899',
           code: '#151518',
+          accent: '#6366f1',
         },
       },
       fontFamily: {

@@ -2,7 +2,7 @@
   "name": "eburon-codebox",
   "private": true,
   "version": "0.1.0",
-  "description": "Eburon Codebox — AI coding agent merging Codex UI + Hermes self-learning + OpenCode engine",
+  "description": "Eburon CodeBox — AI coding agent, voice interface, and workspace for developers. Independent project, not affiliated with Hermes, Nous Research, Google, or OpenAI.",
   "scripts": {
     "dev": "pnpm --filter @eburon/desktop dev",
     "build": "pnpm --filter @eburon/desktop build",
