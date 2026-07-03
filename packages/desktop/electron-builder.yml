@@ -24,6 +24,9 @@
     "category": "Development",
     "icon": "public/icon.png"
   },
+  "deb": {
+    "packageName": "eburon-codebox"
+  },
   "nsis": {
     "oneClick": false,
     "allowToChangeInstallationDirectory": true

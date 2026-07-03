@@ -2,6 +2,12 @@
   "name": "@eburon/desktop",
   "private": true,
   "version": "0.1.0",
+  "description": "Eburon Codebox — AI coding agent desktop app",
+  "author": {
+    "name": "Eburon",
+    "email": "dev@eburon.dev"
+  },
+  "homepage": "https://github.com/lovegold120221-dot/codebox",
   "type": "module",
   "main": "dist-electron/main.cjs",
   "scripts": {
