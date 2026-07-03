@@ -141,8 +141,13 @@ function renderMarkdown(text: string): React.ReactNode[] {
 }
 
 function inlineMarkdown(text: string): React.ReactNode {
-  const parts = text.split(/(\*\*[^*]+\*\*|\*[^*]+\*|`[^`]+`|\[([^\]]+)\]\(([^)]+)\))/g)
+  // Note: keep the inner link groups non-capturing (?:...). A capturing group
+  // inside a split() regex splices its captures (and `undefined` for
+  // non-participating groups) into the result array, which both duplicates the
+  // link text and inserts `undefined` holes that crash the map below.
+  const parts = text.split(/(\*\*[^*]+\*\*|\*[^*]+\*|`[^`]+`|\[[^\]]+\]\([^)]+\))/g)
   return parts.map((part, i) => {
+    if (!part) return null
     if (part.startsWith('**') && part.endsWith('**')) {
       return <strong key={i} className="font-semibold text-codebox-primary">{part.slice(2, -2)}</strong>
     }

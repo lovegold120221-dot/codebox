@@ -50,10 +50,17 @@ export default function SearchView() {
   const [query, setQuery] = useState('')
   const [category, setCategory] = useState<SearchCategory>('all')
 
+  const CATEGORY_TYPE: Record<Exclude<SearchCategory, 'all'>, SearchResult['type']> = {
+    sessions: 'session',
+    files: 'file',
+    prompts: 'prompt',
+    memory: 'memory',
+  }
+
   const results = query.trim().length > 0
     ? MOCK_RESULTS.filter((r) => {
         const matchQuery = r.title.toLowerCase().includes(query.toLowerCase()) || r.preview.toLowerCase().includes(query.toLowerCase())
-        const matchCat = category === 'all' || r.type === category.slice(0, -1) as SearchResult['type'] || (category === 'sessions' && r.type === 'session')
+        const matchCat = category === 'all' || r.type === CATEGORY_TYPE[category]
         return matchQuery && matchCat
       })
     : []
