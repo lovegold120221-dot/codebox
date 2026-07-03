@@ -1,9 +1,9 @@
 import { useStore } from '@/store'
-import { Code2, Shield, Layers, PenTool, Search, Plus } from 'lucide-react'
+import { Code2, Shield, Layers, PenTool, Search, Plus, Mic, GitBranch } from 'lucide-react'
 import { useState, useMemo } from 'react'
 
 const ICON_MAP: Record<string, typeof Code2> = {
-  Code2, Shield, Layers, PenTool,
+  Code2, Shield, Layers, PenTool, Mic, GitBranch,
 }
 
 export default function SkillsView() {
