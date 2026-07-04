@@ -70,60 +70,59 @@ export default function SkillsView() {
     })
   }
 
-  const renderCard = (skill: typeof displayed[0], isList: boolean) => {
+  const renderCard = (skill: typeof displayed[0]) => {
     const Icon = getIconForSkill(skill.name)
     const [from, to, textColor] = getGradient(skill.name)
     const isExpanded = expanded.has(skill.id)
     const descLong = skill.description.length > 100
 
     return (
-      <div
-        key={skill.id}
-        className={`group relative overflow-hidden rounded-xl border border-codebox-border bg-codebox-card/80 backdrop-blur-sm transition-all duration-200 hover:border-codebox-border/60 hover:bg-codebox-card ${
-          isList ? 'flex items-center gap-3 px-4 py-3' : 'flex flex-col gap-3 p-4'
-        }`}
-      >
-        <div className={`flex items-start gap-3 ${isList ? 'flex-1 min-w-0' : ''}`}>
-          <div className={`flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center bg-gradient-to-br ${from} ${to} ${textColor}`}>
-            <Icon size={20} strokeWidth={1.8} />
-          </div>
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2">
-              <span className="font-semibold text-sm text-codebox-primary truncate">{skill.name}</span>
-              <span className={`text-[10px] px-1.5 py-0.5 rounded font-medium uppercase flex-shrink-0 ${
-                skill.type === 'system'
-                  ? 'bg-codebox-input text-codebox-secondary'
-                  : 'text-codebox-purple bg-codebox-purple/10'
-              }`}>
-                {skill.type}
-              </span>
+      <div className="group relative overflow-hidden rounded-xl border border-codebox-border bg-codebox-card/80 backdrop-blur-sm transition-all duration-200 hover:border-codebox-border/60 hover:bg-codebox-card p-4 h-full">
+        <div className="flex flex-col h-full">
+          <div className="flex items-start gap-3">
+            <div className={`flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center bg-gradient-to-br ${from} ${to} ${textColor}`}>
+              <Icon size={20} strokeWidth={1.8} />
             </div>
-            <p className={`text-[12.5px] text-codebox-secondary leading-relaxed mt-1 transition-all duration-200 ${
-              isExpanded || !descLong ? '' : 'line-clamp-2'
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2">
+                <span className="font-semibold text-sm text-codebox-primary truncate">{skill.name}</span>
+                <span className={`text-[10px] px-1.5 py-0.5 rounded font-medium uppercase flex-shrink-0 ${
+                  skill.type === 'system'
+                    ? 'bg-codebox-input text-codebox-secondary'
+                    : 'text-codebox-purple bg-codebox-purple/10'
+                }`}>
+                  {skill.type}
+                </span>
+              </div>
+            </div>
+            <label className="relative inline-block w-9 h-5 flex-shrink-0 cursor-pointer mt-1">
+              <input
+                type="checkbox"
+                checked={skill.enabled}
+                onChange={() => toggleSkill(skill.id)}
+                className="opacity-0 w-0 h-0"
+              />
+              <span className={`absolute cursor-pointer inset-0 rounded-full transition-colors duration-200 ${skill.enabled ? 'bg-codebox-blue' : 'bg-codebox-border'}`}>
+                <span className={`absolute w-3.5 h-3.5 bg-white rounded-full top-0.5 transition-transform duration-200 ${skill.enabled ? 'left-[17px]' : 'left-[3px]'}`} />
+              </span>
+            </label>
+          </div>
+          <div className="flex-1 mt-3">
+            <p className={`text-[12.5px] text-codebox-secondary leading-relaxed transition-all duration-200 ${
+              isExpanded || !descLong ? '' : 'line-clamp-3'
             }`}>
               {skill.description}
             </p>
             {descLong && (
               <button
                 onClick={() => toggleExpanded(skill.id)}
-                className="mt-0.5 flex items-center gap-1 text-[11px] text-codebox-secondary/60 hover:text-codebox-blue transition-colors"
+                className="mt-1 flex items-center gap-1 text-[11px] text-codebox-secondary/60 hover:text-codebox-blue transition-colors"
               >
                 {isExpanded ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
                 {isExpanded ? 'Show less' : 'Show more'}
               </button>
             )}
           </div>
-          <label className="relative inline-block w-9 h-5 flex-shrink-0 cursor-pointer mt-1">
-            <input
-              type="checkbox"
-              checked={skill.enabled}
-              onChange={() => toggleSkill(skill.id)}
-              className="opacity-0 w-0 h-0"
-            />
-            <span className={`absolute cursor-pointer inset-0 rounded-full transition-colors duration-200 ${skill.enabled ? 'bg-codebox-blue' : 'bg-codebox-border'}`}>
-              <span className={`absolute w-3.5 h-3.5 bg-white rounded-full top-0.5 transition-transform duration-200 ${skill.enabled ? 'left-[17px]' : 'left-[3px]'}`} />
-            </span>
-          </label>
         </div>
       </div>
     )
@@ -200,12 +199,12 @@ export default function SkillsView() {
         </div>
 
         {viewMode === 'grid' ? (
-          <div className="grid grid-cols-[repeat(auto-fill,minmax(380px,1fr))] gap-3.5">
-            {displayed.map((skill) => renderCard(skill, false))}
+          <div className="grid grid-cols-[repeat(auto-fill,minmax(380px,1fr))] gap-3.5 auto-rows-fr">
+            {displayed.map((skill) => renderCard(skill))}
           </div>
         ) : (
           <div className="flex flex-col gap-2">
-            {displayed.map((skill) => renderCard(skill, true))}
+            {displayed.map((skill) => renderCard(skill))}
           </div>
         )}
 
