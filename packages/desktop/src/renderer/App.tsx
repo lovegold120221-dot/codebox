@@ -11,7 +11,6 @@ import SkillsView from '@/components/skills/SkillsView'
 import SettingsView from '@/components/settings/SettingsView'
 import AutomationsView from '@/components/automations/AutomationsView'
 import MemoryView from '@/components/settings/MemoryView'
-import DiffPane from '@/components/panel/DiffPane'
 import TerminalPane from '@/components/tools/TerminalPane'
 import BrowserPane from '@/components/tools/BrowserPane'
 import VoiceOrb from '@/components/tools/VoiceOrb'
@@ -58,8 +57,6 @@ export default function App() {
         </div>
         {showComposer && <Composer />}
         <TerminalPane />
-      </main>
-      <DiffPane />
       <BrowserPane />
       <VoiceOrb />
       <Toast />

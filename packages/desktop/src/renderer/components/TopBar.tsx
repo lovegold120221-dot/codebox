@@ -36,12 +36,11 @@ export default function TopBar() {
         <ConnectionStatus />
         <CommandPalette />
         <button
-          className="bg-codebox-input border border-codebox-border text-codebox-primary px-2.5 py-1 rounded-full cursor-pointer flex items-center gap-1.5 text-[11.5px] font-medium hover:bg-white/5 hover:border-codebox-secondary"
+          className="bg-codebox-input border border-codebox-border text-codebox-primary w-7 h-7 rounded-full cursor-pointer flex items-center justify-center hover:bg-white/5 hover:border-codebox-secondary"
           onClick={toggleTheme}
-          title="Toggle Theme"
+          title={theme === 'dark' ? 'Switch to Light' : 'Switch to Dark'}
         >
-          {theme === 'dark' ? <Sun size={14} strokeWidth={2} /> : <Moon size={14} strokeWidth={2} />}
-          <span>{theme === 'dark' ? 'Light' : 'Dark'}</span>
+          {theme === 'dark' ? <Sun size={13} strokeWidth={2} /> : <Moon size={13} strokeWidth={2} />}
         </button>
         <button
           className="bg-transparent border-none text-codebox-secondary cursor-pointer p-1.5 rounded-md flex items-center justify-center hover:bg-white/5 hover:text-codebox-primary"
