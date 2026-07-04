@@ -172,6 +172,15 @@ ipcMain.handle('db:skill:seedFromOpenCode', async () => {
   const skillsDir = path.join(os.homedir(), '.opencode', 'skills')
   if (!fs.existsSync(skillsDir)) return { count: 0 }
 
+  let systemUser = await db.user.findFirst({ where: { firebaseUid: 'system' } })
+  if (!systemUser) {
+    systemUser = await db.user.upsert({
+      where: { firebaseUid: 'system' },
+      create: { firebaseUid: 'system', name: 'System', email: 'system@eburon.dev' },
+      update: {},
+    })
+  }
+
   const entries = fs.readdirSync(skillsDir, { withFileTypes: true })
   const skillDirs = entries.filter((e) => e.isDirectory())
   const seeded: string[] = []
@@ -190,7 +199,7 @@ ipcMain.handle('db:skill:seedFromOpenCode', async () => {
     if (!existing) {
       await db.skill.create({
         data: {
-          userId: 'system',
+          userId: systemUser.id,
           name,
           description,
           type: 'system',
