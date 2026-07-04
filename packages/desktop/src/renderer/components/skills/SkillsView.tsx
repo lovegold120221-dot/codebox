@@ -1,32 +1,172 @@
 import { useStore } from '@/store'
-import { Code2, Shield, Layers, PenTool, Search, Plus, Globe, Monitor, Smartphone, Bot, Brain, Wrench, FileText, Video, Image, Music, MessageSquare, GitBranch, Terminal, Zap, Eye, BookOpen, Sparkles, LayoutGrid, List, ChevronDown, ChevronUp } from 'lucide-react'
 import { useState, useMemo, useEffect } from 'react'
+import {
+  Code2, Shield, Layers, PenTool, Search, Plus, Globe, Monitor, Smartphone, Bot, Brain,
+  Wrench, FileText, Video, Image, Music, MessageSquare, GitBranch, Terminal, Zap, Eye,
+  BookOpen, Sparkles, LayoutGrid, List, ChevronDown, ChevronUp, Palette, Database,
+  Cloud, Lock, Cpu, Server, Network, HardDrive, Radio, Activity, Anchor, Atom,
+  Award, Banknote, BarChart, Battery, Bell, Bike, Binoculars, Bluetooth, Box,
+  Briefcase, Bug, Building, Camera, Car, Cassette, Cast, Clipboard, Clock, CloudSun,
+  Clover, Compass, Cone, Contact, Cookie, Copy, CreditCard, Crop, Cross, Crown,
+  Cup, Cursor, Dice, Disc, Dna, Door, Download, Droplet, Ear, Egg, Eraser,
+  Fan, Feather, Fingerprint, Flag, Flame, Flashlight, Flower, Folder, Footprints,
+  ForkKnife, Framer, Frown, Gamepad, Gauge, Gem, Ghost, Gift, GlassWater, Glasses,
+  Globe2, Grab, Hammer, Hand, Handshake, Hash, Headphones, Heart, HeartPulse,
+  Hexagon, History, Home, Hourglass, IceCream, IdCard, Infinity, Joystick, Key,
+  Keyboard, Lamp, Landmark, Laptop, Leaf, Library, LifeBuoy, Lightbulb, Link,
+  ListMusic, ListVideo, Locate, LockKeyhole, LogIn, LogOut, Luggage, Magnet,
+  Mail, Map, MapPin, Martini, Maximize, Medal, Megaphone, MemoryStick, Menu,
+  Merge, MessagesSquare, Mic, Microscope, Microwave, Minimize, Minus, MonitorCheck,
+  MonitorDot, Moon, Mountain, Mouse, Move, Navigation, Newspaper, Nut, Octagon,
+  Option, Orbit, Package, Paintbrush, PaintRoller, Paperclip, ParkingCircle,
+  PartyPopper, Pause, PawPrint, PcCase, Pen, Pencil, PersonStanding, Phone,
+  Pi, Piano, Pickaxe, PictureInPicture, PiggyBank, Pill, Pin, Pipette, Plane,
+  Play, Plug, PlusCircle, Pocket, Podcast, Pointer, Popcorn, Power, PowerOff,
+  Presentation, Printer, Projector, Puzzle, QrCode, Quote, Radar, RadioReceiver,
+  Rainbow, Receipt, RectangleHorizontal, RectangleVertical, Recycle, Redo,
+  Refrigerator, Regex, Repeat, Repeat2, Replace, Reply, Rewind, Ribbon, Rocket,
+  RockingChair, RollerCoaster, Rotate3D, Rows, Rss, Ruler, Sailboat, Scale,
+  Scan, Scissors, ScreenShare, Scroll, SdCard, Seal, SearchCheck, SearchX,
+  Send, SeparatorHorizontal, SeparatorVertical, ServerCrash, Settings, Shapes,
+  Share, Share2, Sheet, Shell, ShieldCheck, ShieldHalf, ShieldOff, Ship,
+  Shirt, ShoppingBag, ShoppingCart, Shovel, ShowerHead, Shrink, Shuffle,
+  Sidebar, Sigma, Signpost, Siren, Skeleton, Skull, SlidersHorizontal,
+  SlidersVertical, SmartphoneNfc, Smile, Snail, Snowflake, Sofa, SortAsc,
+  SortDesc, Speaker, Speech, Spline, Split, SprayCan, Sprout, Square,
+  SquareActivity, SquareArrowDown, SquareArrowLeft, SquareArrowRight,
+  SquareArrowUp, SquareAsterisk, SquareCheck, SquareChevronDown,
+  SquareChevronLeft, SquareChevronRight, SquareChevronUp, SquareCode,
+  SquareDashed, SquareDot, SquareFunction, SquareKanban, SquareLibrary,
+  SquareM, SquareMenu, SquareMinus, SquareMousePointer, SquareParking,
+  SquarePen, SquarePercent, SquarePi, SquarePilcrow, SquarePlay,
+  SquarePlus, SquarePower, SquareRadical, SquareScissors, SquareSigma,
+  SquareSlash, SquareSplitHorizontal, SquareSquare, SquareStack,
+  SquareTerminal, SquareToggle, SquareToggleHorizontal, SquareUser,
+  SquareUserRound, SquareX, Squircle, Stamp, Star, StarHalf, Stethoscope,
+  Sticker, StickyNote, StopCircle, Store, StretchHorizontal, StretchVertical,
+  Strikethrough, Subscript, Sun, SunDim, SunMedium, SunMoon, Sunrise,
+  Sunset, Superscript, SwatchBook, SwipeDown, SwipeLeft, SwipeRight,
+  SwipeUp, SwitchCamera, Sword, Syringe, Table, Table2, TableProperties,
+  Tablet, Tablets, Tag, Tags, Target, Tent, TestTube, TestTubes, Text,
+  TextCursor, TextQuote, TextSearch, Theater, Thermometer, ThumbsDown,
+  ThumbsUp, Ticket, Timer, ToggleLeft, ToggleRight, Toilet, Tornado,
+  TowerControl, ToyBrick, Tractor, TrafficCone, Train, TrainTrack,
+  TramFront, Trash, Trash2, TreeDeciduous, TreePine, Trees, Trello,
+  Triangle, TriangleAlert, TriangleRight, Trophy, Truck, Turtle,
+  Tv, Twitch, Type, Umbrella, Underline, Undo, Ungroup, Unlink,
+  Unplug, Unsubscribe, Upload, Usb, User, UserCheck, UserCog,
+  UserMinus, UserPlus, UserRound, UserRoundCheck, UserRoundCog,
+  UserRoundMinus, UserRoundPlus, UserRoundSearch, UserRoundX,
+  UserSearch, UserX, Users, Utensils, UtilityPole, Variable,
+  Vault, Vegan, VenetianMask, Vibrate, VibrateOff, VideoOff,
+  Videotape, View, Voicemail, Volume, Volume1, Volume2, VolumeX,
+  Vote, Wallet, Wallpaper, Wand, WandSparkles, Warehouse, WashingMachine,
+  Watch, Waves, Waypoints, Webcam, Webhook, Weight, Wheat, WheatOff,
+  WholeWord, Wifi, WifiOff, Wind, Wine, Worm, WrapText, Wrench,
+  X, XCircle, XOctagon, XSquare, Youtube, ZapOff, ZoomIn, ZoomOut,
+} from 'lucide-react'
 
-const ICON_MAP: Record<string, typeof Code2> = {
-  Code2, Shield, Layers, PenTool, Globe, Monitor, Smartphone, Bot, Brain, Wrench, FileText, Video, Image, Music, MessageSquare, GitBranch, Terminal, Zap, Eye, BookOpen, Sparkles,
+const ALL_ICONS = [
+  Code2, Shield, Layers, PenTool, Globe, Monitor, Smartphone, Bot, Brain,
+  Wrench, FileText, Video, Image, Music, MessageSquare, GitBranch, Terminal,
+  Zap, Eye, BookOpen, Sparkles, Palette, Database, Cloud, Lock, Cpu, Server,
+  Network, HardDrive, Radio, Activity, Anchor, Atom, Award, Banknote, BarChart,
+  Battery, Bell, Bike, Binoculars, Bluetooth, Box, Briefcase, Bug, Building,
+  Camera, Car, Cassette, Cast, Clipboard, Clock, CloudSun, Clover, Compass,
+  Cone, Contact, Cookie, Copy, CreditCard, Crop, Cross, Crown, Cup, Cursor,
+  Dice, Disc, Dna, Door, Download, Droplet, Ear, Egg, Eraser, Fan, Feather,
+  Fingerprint, Flag, Flame, Flashlight, Flower, Folder, Footprints, ForkKnife,
+  Framer, Frown, Gamepad, Gauge, Gem, Ghost, Gift, GlassWater, Glasses,
+  Globe2, Grab, Hammer, Hand, Handshake, Hash, Headphones, Heart, HeartPulse,
+  Hexagon, History, Home, Hourglass, IceCream, IdCard, Infinity, Joystick,
+  Key, Keyboard, Lamp, Landmark, Laptop, Leaf, Library, LifeBuoy, Lightbulb,
+  Link, ListMusic, ListVideo, Locate, LockKeyhole, LogIn, LogOut, Luggage,
+  Magnet, Mail, Map, MapPin, Martini, Maximize, Medal, Megaphone, MemoryStick,
+  Menu, Merge, MessagesSquare, Mic, Microscope, Microwave, Minimize, Minus,
+  MonitorCheck, MonitorDot, Moon, Mountain, Mouse, Move, Navigation, Newspaper,
+  Nut, Octagon, Option, Orbit, Package, Paintbrush, PaintRoller, Paperclip,
+  ParkingCircle, PartyPopper, Pause, PawPrint, PcCase, Pen, Pencil,
+  PersonStanding, Phone, Pi, Piano, Pickaxe, PictureInPicture, PiggyBank,
+  Pill, Pin, Pipette, Plane, Play, Plug, PlusCircle, Pocket, Podcast, Pointer,
+  Popcorn, Power, PowerOff, Presentation, Printer, Projector, Puzzle, QrCode,
+  Quote, Radar, RadioReceiver, Rainbow, Receipt, Recycle, Redo, Refrigerator,
+  Regex, Repeat, Repeat2, Replace, Reply, Rewind, Ribbon, Rocket, RockingChair,
+  RollerCoaster, Rotate3D, Rows, Rss, Ruler, Sailboat, Scale, Scan, Scissors,
+  ScreenShare, Scroll, SdCard, Seal, SearchCheck, SearchX, Send,
+  SeparatorHorizontal, SeparatorVertical, ServerCrash, Settings, Shapes,
+  Share, Share2, Sheet, Shell, ShieldCheck, ShieldHalf, ShieldOff, Ship,
+  Shirt, ShoppingBag, ShoppingCart, Shovel, ShowerHead, Shrink, Shuffle,
+  Sidebar, Sigma, Signpost, Siren, Skeleton, Skull, SlidersHorizontal,
+  SlidersVertical, SmartphoneNfc, Smile, Snail, Snowflake, Sofa, SortAsc,
+  SortDesc, Speaker, Speech, Spline, Split, SprayCan, Sprout, Square,
+  SquareActivity, SquareArrowDown, SquareArrowLeft, SquareArrowRight,
+  SquareArrowUp, SquareAsterisk, SquareCheck, SquareChevronDown,
+  SquareChevronLeft, SquareChevronRight, SquareChevronUp, SquareCode,
+  SquareDashed, SquareDot, SquareFunction, SquareKanban, SquareLibrary,
+  SquareM, SquareMenu, SquareMinus, SquareMousePointer, SquareParking,
+  SquarePen, SquarePercent, SquarePi, SquarePilcrow, SquarePlay,
+  SquarePlus, SquarePower, SquareRadical, SquareScissors, SquareSigma,
+  SquareSlash, SquareSplitHorizontal, SquareSquare, SquareStack,
+  SquareTerminal, SquareToggle, SquareToggleHorizontal, SquareUser,
+  SquareUserRound, SquareX, Squircle, Stamp, Star, StarHalf, Stethoscope,
+  Sticker, StickyNote, StopCircle, Store, StretchHorizontal, StretchVertical,
+  Strikethrough, Subscript, Sun, SunDim, SunMedium, SunMoon, Sunrise,
+  Sunset, Superscript, SwatchBook, SwipeDown, SwipeLeft, SwipeRight,
+  SwipeUp, SwitchCamera, Sword, Syringe, Table, Table2, TableProperties,
+  Tablet, Tablets, Tag, Tags, Target, Tent, TestTube, TestTubes, Text,
+  TextCursor, TextQuote, TextSearch, Theater, Thermometer, ThumbsDown,
+  ThumbsUp, Ticket, Timer, ToggleLeft, ToggleRight, Toilet, Tornado,
+  TowerControl, ToyBrick, Tractor, TrafficCone, Train, TrainTrack,
+  TramFront, Trash, Trash2, TreeDeciduous, TreePine, Trees, Trello,
+  Triangle, TriangleAlert, TriangleRight, Trophy, Truck, Turtle,
+  Tv, Twitch, Type, Umbrella, Underline, Undo, Ungroup, Unlink,
+  Unplug, Unsubscribe, Upload, Usb, User, UserCheck, UserCog,
+  UserMinus, UserPlus, UserRound, UserRoundCheck, UserRoundCog,
+  UserRoundMinus, UserRoundPlus, UserRoundSearch, UserRoundX,
+  UserSearch, UserX, Users, Utensils, UtilityPole, Variable,
+  Vault, Vegan, VenetianMask, Vibrate, VibrateOff, VideoOff,
+  Videotape, View, Voicemail, Volume, Volume1, Volume2, VolumeX,
+  Vote, Wallet, Wallpaper, Wand, WandSparkles, Warehouse, WashingMachine,
+  Watch, Waves, Waypoints, Webcam, Webhook, Weight, Wheat, WheatOff,
+  WholeWord, Wifi, WifiOff, Wind, Wine, Worm, WrapText, X, XCircle,
+  XOctagon, XSquare, Youtube, ZapOff, ZoomIn, ZoomOut,
+]
+
+function hashString(str: string): number {
+  let hash = 0
+  for (let i = 0; i < str.length; i++) {
+    const char = str.charCodeAt(i)
+    hash = ((hash << 5) - hash) + char
+    hash |= 0
+  }
+  return Math.abs(hash)
 }
 
-function getIconForSkill(name: string, iconName: string | null): typeof Code2 {
-  if (iconName && ICON_MAP[iconName]) return ICON_MAP[iconName]
-  const lower = name.toLowerCase()
-  if (lower.includes('browser') || lower.includes('web')) return Globe
-  if (lower.includes('mac') || lower.includes('desktop')) return Monitor
-  if (lower.includes('mobile') || lower.includes('flutter') || lower.includes('pwa')) return Smartphone
-  if (lower.includes('ai') || lower.includes('agent')) return Bot
-  if (lower.includes('brain') || lower.includes('learn')) return Brain
-  if (lower.includes('tool') || lower.includes('wrench')) return Wrench
-  if (lower.includes('file') || lower.includes('doc')) return FileText
-  if (lower.includes('video') || lower.includes('cinema')) return Video
-  if (lower.includes('image') || lower.includes('photo')) return Image
-  if (lower.includes('music') || lower.includes('audio') || lower.includes('voice')) return Music
-  if (lower.includes('chat') || lower.includes('message')) return MessageSquare
-  if (lower.includes('git') || lower.includes('branch')) return GitBranch
-  if (lower.includes('terminal') || lower.includes('cli') || lower.includes('shell')) return Terminal
-  if (lower.includes('zap') || lower.includes('fast')) return Zap
-  if (lower.includes('search') || lower.includes('find')) return Search
-  if (lower.includes('book') || lower.includes('read')) return BookOpen
-  if (lower.includes('sparkle') || lower.includes('magic')) return Sparkles
-  return Code2
+function getIconForSkill(name: string): typeof Code2 {
+  const index = hashString(name) % ALL_ICONS.length
+  return ALL_ICONS[index]
+}
+
+const GRADIENT_PAIRS = [
+  ['from-blue-500/20', 'to-purple-500/20', 'text-blue-400'],
+  ['from-emerald-500/20', 'to-teal-500/20', 'text-emerald-400'],
+  ['from-orange-500/20', 'to-rose-500/20', 'text-orange-400'],
+  ['from-violet-500/20', 'to-fuchsia-500/20', 'text-violet-400'],
+  ['from-cyan-500/20', 'to-blue-500/20', 'text-cyan-400'],
+  ['from-pink-500/20', 'to-rose-500/20', 'text-pink-400'],
+  ['from-amber-500/20', 'to-yellow-500/20', 'text-amber-400'],
+  ['from-green-500/20', 'to-emerald-500/20', 'text-green-400'],
+  ['from-indigo-500/20', 'to-violet-500/20', 'text-indigo-400'],
+  ['from-red-500/20', 'to-orange-500/20', 'text-red-400'],
+  ['from-teal-500/20', 'to-cyan-500/20', 'text-teal-400'],
+  ['from-sky-500/20', 'to-indigo-500/20', 'text-sky-400'],
+  ['from-lime-500/20', 'to-green-500/20', 'text-lime-400'],
+  ['from-rose-500/20', 'to-pink-500/20', 'text-rose-400'],
+  ['from-fuchsia-500/20', 'to-purple-500/20', 'text-fuchsia-400'],
+]
+
+function getGradient(name: string) {
+  return GRADIENT_PAIRS[hashString(name) % GRADIENT_PAIRS.length]
 }
 
 export default function SkillsView() {
@@ -57,7 +197,8 @@ export default function SkillsView() {
   }
 
   const renderCard = (skill: typeof displayed[0], isList: boolean) => {
-    const Icon = getIconForSkill(skill.name, skill.icon)
+    const Icon = getIconForSkill(skill.name)
+    const [from, to, textColor] = getGradient(skill.name)
     const isExpanded = expanded.has(skill.id)
     const descLong = skill.description.length > 100
 
@@ -69,9 +210,7 @@ export default function SkillsView() {
         }`}
       >
         <div className={`flex items-start gap-3 ${isList ? 'flex-1 min-w-0' : ''}`}>
-          <div className={`flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center bg-gradient-to-br from-codebox-blue/20 to-codebox-purple/20 text-codebox-blue ${
-            skill.type === 'custom' ? 'from-codebox-purple/20 to-codebox-purple/10 text-codebox-purple' : ''
-          }`}>
+          <div className={`flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center bg-gradient-to-br ${from} ${to} ${textColor}`}>
             <Icon size={20} strokeWidth={1.8} />
           </div>
           <div className={`${isList ? 'flex items-center gap-3 flex-1 min-w-0' : 'flex-1'}`}>
@@ -146,90 +285,92 @@ export default function SkillsView() {
   }
 
   return (
-    <div className="w-full max-w-[960px] flex flex-col gap-5 px-5 py-8 pb-24 mx-auto">
-      <div className="flex justify-between items-center border-b border-codebox-border pb-4">
-        <div>
-          <h2 className="text-xl font-semibold text-codebox-primary">Skills &amp; Capabilities</h2>
-          <p className="text-[12.5px] text-codebox-secondary mt-0.5">
-            {skills.length} skills loaded from OpenCode — specialized instructions for your AI agent.
-          </p>
-        </div>
-        <button className="btn-primary flex items-center gap-1.5">
-          <Plus size={14} />
-          <span>Create Skill</span>
-        </button>
-      </div>
-
-      <div className="flex justify-between items-center gap-3">
-        <div className="flex items-center gap-2 bg-codebox-input border border-codebox-border px-3 py-1.5 rounded-lg w-[260px]">
-          <Search size={14} className="text-codebox-secondary" />
-          <input
-            className="bg-transparent border-none outline-none text-codebox-primary text-[12.5px] w-full"
-            placeholder="Filter skills..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-          />
-        </div>
-        <div className="flex items-center gap-2">
-          <div className="flex gap-1.5">
-            <span
-              className={`px-3 py-1.5 rounded-full text-xs cursor-pointer border border-transparent transition-all ${
-                filter === 'all' ? 'bg-codebox-primary text-codebox-bg font-medium' : 'bg-codebox-input text-codebox-secondary hover:text-codebox-primary'
-              }`}
-              onClick={() => setFilter('all')}
-            >
-              All ({skills.length})
-            </span>
-            <span
-              className={`px-3 py-1.5 rounded-full text-xs cursor-pointer border border-transparent transition-all ${
-                filter === 'system' ? 'bg-codebox-primary text-codebox-bg font-medium' : 'bg-codebox-input text-codebox-secondary hover:text-codebox-primary'
-              }`}
-              onClick={() => setFilter('system')}
-            >
-              System ({systemCount})
-            </span>
-            <span
-              className={`px-3 py-1.5 rounded-full text-xs cursor-pointer border border-transparent transition-all ${
-                filter === 'custom' ? 'bg-codebox-primary text-codebox-bg font-medium' : 'bg-codebox-input text-codebox-secondary hover:text-codebox-primary'
-              }`}
-              onClick={() => setFilter('custom')}
-            >
-              Custom ({customCount})
-            </span>
+    <div className="w-full min-h-screen flex flex-col">
+      <div className="flex-1 w-full max-w-[960px] flex flex-col gap-5 px-5 pt-8 pb-32 mx-auto">
+        <div className="flex justify-between items-center border-b border-codebox-border pb-4">
+          <div>
+            <h2 className="text-xl font-semibold text-codebox-primary">Skills &amp; Capabilities</h2>
+            <p className="text-[12.5px] text-codebox-secondary mt-0.5">
+              {skills.length} skills loaded — specialized instructions for your AI agent.
+            </p>
           </div>
-          <div className="flex items-center gap-1 ml-3 bg-codebox-input border border-codebox-border rounded-lg p-0.5">
-            <button
-              onClick={() => setViewMode('grid')}
-              className={`p-1.5 rounded-md transition-all ${viewMode === 'grid' ? 'bg-codebox-primary/10 text-codebox-primary' : 'text-codebox-secondary hover:text-codebox-primary'}`}
-            >
-              <LayoutGrid size={14} />
-            </button>
-            <button
-              onClick={() => setViewMode('list')}
-              className={`p-1.5 rounded-md transition-all ${viewMode === 'list' ? 'bg-codebox-primary/10 text-codebox-primary' : 'text-codebox-secondary hover:text-codebox-primary'}`}
-            >
-              <List size={14} />
-            </button>
+          <button className="btn-primary flex items-center gap-1.5">
+            <Plus size={14} />
+            <span>Create Skill</span>
+          </button>
+        </div>
+
+        <div className="flex justify-between items-center gap-3">
+          <div className="flex items-center gap-2 bg-codebox-input border border-codebox-border px-3 py-1.5 rounded-lg w-[260px]">
+            <Search size={14} className="text-codebox-secondary" />
+            <input
+              className="bg-transparent border-none outline-none text-codebox-primary text-[12.5px] w-full"
+              placeholder="Filter skills..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="flex gap-1.5">
+              <span
+                className={`px-3 py-1.5 rounded-full text-xs cursor-pointer border border-transparent transition-all ${
+                  filter === 'all' ? 'bg-codebox-primary text-codebox-bg font-medium' : 'bg-codebox-input text-codebox-secondary hover:text-codebox-primary'
+                }`}
+                onClick={() => setFilter('all')}
+              >
+                All ({skills.length})
+              </span>
+              <span
+                className={`px-3 py-1.5 rounded-full text-xs cursor-pointer border border-transparent transition-all ${
+                  filter === 'system' ? 'bg-codebox-primary text-codebox-bg font-medium' : 'bg-codebox-input text-codebox-secondary hover:text-codebox-primary'
+                }`}
+                onClick={() => setFilter('system')}
+              >
+                System ({systemCount})
+              </span>
+              <span
+                className={`px-3 py-1.5 rounded-full text-xs cursor-pointer border border-transparent transition-all ${
+                  filter === 'custom' ? 'bg-codebox-primary text-codebox-bg font-medium' : 'bg-codebox-input text-codebox-secondary hover:text-codebox-primary'
+                }`}
+                onClick={() => setFilter('custom')}
+              >
+                Custom ({customCount})
+              </span>
+            </div>
+            <div className="flex items-center gap-1 ml-3 bg-codebox-input border border-codebox-border rounded-lg p-0.5">
+              <button
+                onClick={() => setViewMode('grid')}
+                className={`p-1.5 rounded-md transition-all ${viewMode === 'grid' ? 'bg-codebox-primary/10 text-codebox-primary' : 'text-codebox-secondary hover:text-codebox-primary'}`}
+              >
+                <LayoutGrid size={14} />
+              </button>
+              <button
+                onClick={() => setViewMode('list')}
+                className={`p-1.5 rounded-md transition-all ${viewMode === 'list' ? 'bg-codebox-primary/10 text-codebox-primary' : 'text-codebox-secondary hover:text-codebox-primary'}`}
+              >
+                <List size={14} />
+              </button>
+            </div>
           </div>
         </div>
+
+        {viewMode === 'grid' ? (
+          <div className="grid grid-cols-[repeat(auto-fill,minmax(380px,1fr))] gap-3.5">
+            {displayed.map((skill) => renderCard(skill, false))}
+          </div>
+        ) : (
+          <div className="flex flex-col gap-2">
+            {displayed.map((skill) => renderCard(skill, true))}
+          </div>
+        )}
+
+        {displayed.length === 0 && (
+          <div className="flex flex-col items-center justify-center py-16 text-codebox-secondary">
+            <Search size={32} className="mb-3 opacity-40" />
+            <p className="text-sm">No skills match your filter</p>
+          </div>
+        )}
       </div>
-
-      {viewMode === 'grid' ? (
-        <div className="grid grid-cols-[repeat(auto-fill,minmax(380px,1fr))] gap-3.5">
-          {displayed.map((skill) => renderCard(skill, false))}
-        </div>
-      ) : (
-        <div className="flex flex-col gap-2">
-          {displayed.map((skill) => renderCard(skill, true))}
-        </div>
-      )}
-
-      {displayed.length === 0 && (
-        <div className="flex flex-col items-center justify-center py-16 text-codebox-secondary">
-          <Search size={32} className="mb-3 opacity-40" />
-          <p className="text-sm">No skills match your filter</p>
-        </div>
-      )}
     </div>
   )
 }
