@@ -169,8 +169,6 @@ ipcMain.handle('db:skill:delete', async (_e, id: string) => {
 
 ipcMain.handle('db:skill:seedFromOpenCode', async () => {
   const db = getDb()
-  const skillsDir = path.join(os.homedir(), '.opencode', 'skills')
-  if (!fs.existsSync(skillsDir)) return { count: 0 }
 
   let systemUser = await db.user.findFirst({ where: { firebaseUid: 'system' } })
   if (!systemUser) {
@@ -181,19 +179,39 @@ ipcMain.handle('db:skill:seedFromOpenCode', async () => {
     })
   }
 
-  const entries = fs.readdirSync(skillsDir, { withFileTypes: true })
-  const skillDirs = entries.filter((e) => e.isDirectory())
+  const skillDirs: string[] = []
+
+  const opencodeDir = path.join(os.homedir(), '.opencode', 'skills')
+  if (fs.existsSync(opencodeDir)) {
+    for (const e of fs.readdirSync(opencodeDir, { withFileTypes: true })) {
+      if (e.isDirectory()) skillDirs.push(path.join(opencodeDir, e.name, 'SKILL.md'))
+    }
+  }
+
+  const hermesDir = path.join(os.homedir(), '.hermes')
+  if (fs.existsSync(hermesDir)) {
+    const walk = (dir: string) => {
+      for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
+        const full = path.join(dir, e.name)
+        if (e.isDirectory()) walk(full)
+        else if (e.name === 'SKILL.md') skillDirs.push(full)
+      }
+    }
+    walk(hermesDir)
+  }
+
   const seeded: string[] = []
+  const seenNames = new Set<string>()
 
-  for (const dir of skillDirs) {
-    const skillPath = path.join(skillsDir, dir.name, 'SKILL.md')
-    if (!fs.existsSync(skillPath)) continue
-
+  for (const skillPath of skillDirs) {
     const content = fs.readFileSync(skillPath, 'utf-8')
     const nameMatch = content.match(/^name:\s*(.+)$/m)
     const descMatch = content.match(/^description:\s*"(.+)"$/m)
-    const name = nameMatch ? nameMatch[1].trim() : dir.name
+    const name = nameMatch ? nameMatch[1].trim() : path.basename(path.dirname(skillPath))
     const description = descMatch ? descMatch[1].trim() : ''
+
+    if (seenNames.has(name)) continue
+    seenNames.add(name)
 
     const existing = await db.skill.findFirst({ where: { name } })
     if (!existing) {
@@ -204,7 +222,7 @@ ipcMain.handle('db:skill:seedFromOpenCode', async () => {
           description,
           type: 'system',
           enabled: true,
-          icon: dir.name,
+          icon: path.basename(path.dirname(skillPath)),
           content,
         },
       })
