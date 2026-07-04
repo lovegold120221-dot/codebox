@@ -98,6 +98,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
       create: (data: any): Promise<any> => ipcRenderer.invoke('db:skill:create', data),
       update: (id: string, data: any): Promise<any> => ipcRenderer.invoke('db:skill:update', id, data),
       delete: (id: string): Promise<boolean> => ipcRenderer.invoke('db:skill:delete', id),
+      seedFromOpenCode: (): Promise<{ count: number; skills: string[] }> => ipcRenderer.invoke('db:skill:seedFromOpenCode'),
     },
   },
 

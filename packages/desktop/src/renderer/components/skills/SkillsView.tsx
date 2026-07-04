@@ -1,15 +1,40 @@
 import { useStore } from '@/store'
-import { Code2, Shield, Layers, PenTool, Search, Plus } from 'lucide-react'
-import { useState, useMemo } from 'react'
+import { Code2, Shield, Layers, PenTool, Search, Plus, Globe, Monitor, Smartphone, Bot, Brain, Wrench, FileText, Video, Image, Music, MessageSquare, GitBranch, Terminal, Zap, Eye, BookOpen, Sparkles } from 'lucide-react'
+import { useState, useMemo, useEffect } from 'react'
 
 const ICON_MAP: Record<string, typeof Code2> = {
-  Code2, Shield, Layers, PenTool,
+  Code2, Shield, Layers, PenTool, Globe, Monitor, Smartphone, Bot, Brain, Wrench, FileText, Video, Image, Music, MessageSquare, GitBranch, Terminal, Zap, Eye, BookOpen, Sparkles,
+}
+
+function getIconForSkill(name: string, iconName: string | null): typeof Code2 {
+  if (iconName && ICON_MAP[iconName]) return ICON_MAP[iconName]
+  const lower = name.toLowerCase()
+  if (lower.includes('browser') || lower.includes('web')) return Globe
+  if (lower.includes('mac') || lower.includes('desktop')) return Monitor
+  if (lower.includes('mobile') || lower.includes('flutter') || lower.includes('pwa')) return Smartphone
+  if (lower.includes('ai') || lower.includes('agent')) return Bot
+  if (lower.includes('brain') || lower.includes('learn')) return Brain
+  if (lower.includes('tool') || lower.includes('wrench')) return Wrench
+  if (lower.includes('file') || lower.includes('doc')) return FileText
+  if (lower.includes('video') || lower.includes('cinema')) return Video
+  if (lower.includes('image') || lower.includes('photo')) return Image
+  if (lower.includes('music') || lower.includes('audio') || lower.includes('voice')) return Music
+  if (lower.includes('chat') || lower.includes('message')) return MessageSquare
+  if (lower.includes('git') || lower.includes('branch')) return GitBranch
+  if (lower.includes('terminal') || lower.includes('cli') || lower.includes('shell')) return Terminal
+  if (lower.includes('zap') || lower.includes('fast')) return Zap
+  if (lower.includes('search') || lower.includes('find')) return Search
+  if (lower.includes('book') || lower.includes('read')) return BookOpen
+  if (lower.includes('sparkle') || lower.includes('magic')) return Sparkles
+  return Code2
 }
 
 export default function SkillsView() {
-  const { skills, toggleSkill } = useStore()
+  const { skills, toggleSkill, loadSkills } = useStore()
   const [filter, setFilter] = useState<'all' | 'system' | 'custom'>('all')
   const [search, setSearch] = useState('')
+
+  useEffect(() => { loadSkills() }, [loadSkills])
 
   const systemCount = skills.filter((s) => s.type === 'system').length
   const customCount = skills.filter((s) => s.type === 'custom').length
@@ -75,13 +100,13 @@ export default function SkillsView() {
 
       <div className="grid grid-cols-[repeat(auto-fill,minmax(380px,1fr))] gap-3.5">
         {displayed.map((skill) => {
-          const Icon = ICON_MAP[skill.icon] || Code2
+          const Icon = getIconForSkill(skill.name, skill.icon)
           return (
             <div key={skill.id} className="card flex flex-col gap-3">
               <div className="flex justify-between items-start">
                 <div className="flex gap-3 items-center">
                   <div className={`w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 bg-current/10 ${
-                    skill.type === 'custom' ? 'text-codebox-purple' : skill.id === 'cve-scanner' ? 'text-codebox-green' : 'text-codebox-blue'
+                    skill.type === 'custom' ? 'text-codebox-purple' : 'text-codebox-blue'
                   }`}>
                     <Icon size={20} strokeWidth={1.8} />
                   </div>

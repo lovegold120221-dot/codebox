@@ -31,6 +31,7 @@ export interface SkillDef {
   type: 'system' | 'custom'
   enabled: boolean
   icon: string
+  content?: string | null
 }
 
 export interface ModelDef {
@@ -69,6 +70,7 @@ interface AppState {
   addMessage: (threadId: string, message: Message) => void
   updateMessage: (threadId: string, msgId: string, updates: Partial<Message>) => void
   toggleSkill: (id: string) => void
+  loadSkills: () => Promise<void>
   setActiveModel: (id: string) => void
   setActiveMode: (mode: AppState['activeMode']) => void
   toggleSidebar: () => void
@@ -90,12 +92,7 @@ export const useStore = create<AppState>((set, get) => ({
   activeThreadId: null,
   threads: [],
   messages: {},
-  skills: [
-    { id: 'ast-indexer', name: 'AST Codebase Indexer', description: 'Automatically builds vector embeddings and semantic syntax trees across your local repository for ultra-fast code retrieval.', type: 'system', enabled: true, icon: 'Code2' },
-    { id: 'cve-scanner', name: 'CVE Security Scanner', description: 'Scans code modifications in real-time for SQL injections, XSS vulnerabilities, and outdated package dependencies.', type: 'system', enabled: true, icon: 'Shield' },
-    { id: 'react19-migrator', name: 'React 19 Action Migrator', description: 'Specialized refactoring rules converting legacy useEffect hooks and class components directly into React 19 Server Actions.', type: 'custom', enabled: true, icon: 'Layers' },
-    { id: 'figma-to-tailwind', name: 'Figma to Tailwind UI', description: 'Translates Figma JSON design tokens and layout hierarchies into accessible, responsive Tailwind CSS JSX structures.', type: 'custom', enabled: false, icon: 'PenTool' },
-  ],
+  skills: [],
   models: EBURON_ALIASES.map((alias) => ({
     id: alias,
     name: EBURON_DISPLAY_NAMES[alias] || alias,
@@ -134,10 +131,35 @@ export const useStore = create<AppState>((set, get) => ({
         ),
       },
     })),
-  toggleSkill: (id) =>
+  toggleSkill: (id) => {
+    const skill = get().skills.find((s) => s.id === id)
+    if (!skill) return
+    const newEnabled = !skill.enabled
     set((s) => ({
-      skills: s.skills.map((sk) => (sk.id === id ? { ...sk, enabled: !sk.enabled } : sk)),
-    })),
+      skills: s.skills.map((sk) => (sk.id === id ? { ...sk, enabled: newEnabled } : sk)),
+    }))
+    const api = (window as any).electronAPI?.db?.skill
+    if (api) api.update(id, { enabled: newEnabled }).catch(() => {})
+  },
+  loadSkills: async () => {
+    const api = (window as any).electronAPI?.db?.skill
+    if (!api) return
+    try {
+      await api.seedFromOpenCode()
+      const dbSkills = await api.list()
+      set({
+        skills: dbSkills.map((s: any) => ({
+          id: s.id,
+          name: s.name,
+          description: s.description || '',
+          type: s.type === 'custom' ? 'custom' : 'system',
+          enabled: s.enabled,
+          icon: s.icon || 'Code2',
+          content: s.content,
+        })),
+      })
+    } catch {}
+  },
   setActiveModel: (id) => set({ activeModel: id }),
   setActiveMode: (mode) => set({ activeMode: mode }),
   toggleSidebar: () => set((s) => ({ isSidebarOpen: !s.isSidebarOpen })),

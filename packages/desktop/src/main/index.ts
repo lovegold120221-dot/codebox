@@ -1,5 +1,7 @@
 import { app, BrowserWindow, ipcMain, dialog, protocol } from 'electron'
 import path from 'path'
+import fs from 'fs'
+import os from 'os'
 import { getOrchestrator } from './providers/orchestrator'
 import { SafeLogger } from './providers/logger'
 import { getAllAliases, getProviderConfig } from './providers/config'
@@ -163,6 +165,45 @@ ipcMain.handle('db:skill:delete', async (_e, id: string) => {
   const db = getDb()
   await db.skill.delete({ where: { id } })
   return true
+})
+
+ipcMain.handle('db:skill:seedFromOpenCode', async () => {
+  const db = getDb()
+  const skillsDir = path.join(os.homedir(), '.opencode', 'skills')
+  if (!fs.existsSync(skillsDir)) return { count: 0 }
+
+  const entries = fs.readdirSync(skillsDir, { withFileTypes: true })
+  const skillDirs = entries.filter((e) => e.isDirectory())
+  const seeded: string[] = []
+
+  for (const dir of skillDirs) {
+    const skillPath = path.join(skillsDir, dir.name, 'SKILL.md')
+    if (!fs.existsSync(skillPath)) continue
+
+    const content = fs.readFileSync(skillPath, 'utf-8')
+    const nameMatch = content.match(/^name:\s*(.+)$/m)
+    const descMatch = content.match(/^description:\s*"(.+)"$/m)
+    const name = nameMatch ? nameMatch[1].trim() : dir.name
+    const description = descMatch ? descMatch[1].trim() : ''
+
+    const existing = await db.skill.findFirst({ where: { name } })
+    if (!existing) {
+      await db.skill.create({
+        data: {
+          userId: 'system',
+          name,
+          description,
+          type: 'system',
+          enabled: true,
+          icon: dir.name,
+          content,
+        },
+      })
+      seeded.push(name)
+    }
+  }
+
+  return { count: seeded.length, skills: seeded }
 })
 
 ipcMain.handle('google:auth:init', async (_e, credentialsPath?: string) => {
