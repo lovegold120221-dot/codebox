@@ -1,11 +1,6 @@
 import { useStore } from '@/store'
 import { useState, useMemo, useEffect } from 'react'
-import * as LucideIcons from 'lucide-react'
-import { Search, Plus, LayoutGrid, List, ChevronDown, ChevronUp } from 'lucide-react'
-
-const ICON_NAMES = Object.keys(LucideIcons).filter(
-  (k) => k[0] === k[0].toUpperCase() && !k.endsWith('Icon') && typeof LucideIcons[k as keyof typeof LucideIcons] === 'object'
-)
+import { Search, Plus, ChevronDown, Check, X } from 'lucide-react'
 
 function hashString(str: string): number {
   let hash = 0
@@ -16,205 +11,271 @@ function hashString(str: string): number {
   return Math.abs(hash)
 }
 
-function getIconForSkill(name: string) {
-  const iconName = ICON_NAMES[hashString(name) % ICON_NAMES.length]
-  return LucideIcons[iconName as keyof typeof LucideIcons] as React.ComponentType<{ size?: number; strokeWidth?: number }>
-}
-
-const GRADIENT_PAIRS = [
-  ['from-blue-500/20', 'to-purple-500/20', 'text-blue-400'],
-  ['from-emerald-500/20', 'to-teal-500/20', 'text-emerald-400'],
-  ['from-orange-500/20', 'to-rose-500/20', 'text-orange-400'],
-  ['from-violet-500/20', 'to-fuchsia-500/20', 'text-violet-400'],
-  ['from-cyan-500/20', 'to-blue-500/20', 'text-cyan-400'],
-  ['from-pink-500/20', 'to-rose-500/20', 'text-pink-400'],
-  ['from-amber-500/20', 'to-yellow-500/20', 'text-amber-400'],
-  ['from-green-500/20', 'to-emerald-500/20', 'text-green-400'],
-  ['from-indigo-500/20', 'to-violet-500/20', 'text-indigo-400'],
-  ['from-red-500/20', 'to-orange-500/20', 'text-red-400'],
-  ['from-teal-500/20', 'to-cyan-500/20', 'text-teal-400'],
-  ['from-sky-500/20', 'to-indigo-500/20', 'text-sky-400'],
-  ['from-lime-500/20', 'to-green-500/20', 'text-lime-400'],
-  ['from-rose-500/20', 'to-pink-500/20', 'text-rose-400'],
-  ['from-fuchsia-500/20', 'to-purple-500/20', 'text-fuchsia-400'],
+const BADGE_COLORS = [
+  'bg-blue-500/10 text-blue-400',
+  'bg-emerald-500/10 text-emerald-400',
+  'bg-orange-500/10 text-orange-400',
+  'bg-violet-500/10 text-violet-400',
+  'bg-pink-500/10 text-pink-400',
+  'bg-amber-500/10 text-amber-400',
+  'bg-cyan-500/10 text-cyan-400',
+  'bg-rose-500/10 text-rose-400',
+  'bg-indigo-500/10 text-indigo-400',
+  'bg-teal-500/10 text-teal-400',
 ]
 
-function getGradient(name: string) {
-  return GRADIENT_PAIRS[hashString(name) % GRADIENT_PAIRS.length]
+function getBadgeColor(name: string) {
+  return BADGE_COLORS[hashString(name) % BADGE_COLORS.length]
+}
+
+const INITIALS_GRADIENTS = [
+  'from-blue-500 to-purple-500',
+  'from-emerald-500 to-teal-500',
+  'from-orange-500 to-rose-500',
+  'from-violet-500 to-fuchsia-500',
+  'from-cyan-500 to-blue-500',
+  'from-pink-500 to-rose-500',
+  'from-amber-500 to-yellow-500',
+  'from-indigo-500 to-violet-500',
+  'from-red-500 to-orange-500',
+  'from-teal-500 to-cyan-500',
+]
+
+function getInitialsGradient(name: string) {
+  return INITIALS_GRADIENTS[hashString(name) % INITIALS_GRADIENTS.length]
+}
+
+function getInitials(name: string) {
+  const words = name.split(/\s+/).filter(Boolean)
+  if (words.length >= 2) return (words[0][0] + words[1][0]).toUpperCase()
+  return name.slice(0, 2).toUpperCase()
 }
 
 export default function SkillsView() {
   const { skills, toggleSkill, loadSkills } = useStore()
-  const [filter, setFilter] = useState<'all' | 'system' | 'custom'>('all')
   const [search, setSearch] = useState('')
-  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
-  const [expanded, setExpanded] = useState<Set<string>>(new Set())
+  const [filter, setFilter] = useState<'all' | 'enabled' | 'disabled'>('all')
+  const [sort, setSort] = useState<'featured' | 'asc' | 'desc'>('featured')
+  const [filterOpen, setFilterOpen] = useState(false)
+  const [sortOpen, setSortOpen] = useState(false)
+  const [selectedSkill, setSelectedSkill] = useState<typeof displayed[0] | null>(null)
 
   useEffect(() => { loadSkills() }, [loadSkills])
 
-  const systemCount = skills.filter((s) => s.type === 'system').length
-  const customCount = skills.filter((s) => s.type === 'custom').length
+  const enabledCount = skills.filter((s) => s.enabled).length
 
   const displayed = useMemo(() => {
-    return skills
-      .filter((s) => filter === 'all' || s.type === filter)
-      .filter((s) => !search || s.name.toLowerCase().includes(search.toLowerCase()) || s.description.toLowerCase().includes(search.toLowerCase()))
-  }, [skills, filter, search])
+    let result = skills
+    if (search.trim()) {
+      const q = search.toLowerCase()
+      result = result.filter((s) =>
+        s.name.toLowerCase().includes(q) ||
+        s.description.toLowerCase().includes(q) ||
+        s.type.toLowerCase().includes(q)
+      )
+    }
+    if (filter === 'enabled') result = result.filter((s) => s.enabled)
+    else if (filter === 'disabled') result = result.filter((s) => !s.enabled)
+    if (sort === 'asc') result = [...result].sort((a, b) => a.name.localeCompare(b.name))
+    else if (sort === 'desc') result = [...result].sort((a, b) => b.name.localeCompare(a.name))
+    return result
+  }, [skills, search, filter, sort])
 
-  const toggleExpanded = (id: string) => {
-    setExpanded((prev) => {
-      const next = new Set(prev)
-      if (next.has(id)) next.delete(id)
-      else next.add(id)
-      return next
-    })
-  }
-
-  const renderCard = (skill: typeof displayed[0]) => {
-    const Icon = getIconForSkill(skill.name)
-    const [from, to, textColor] = getGradient(skill.name)
-    const isExpanded = expanded.has(skill.id)
-    const descLong = skill.description.length > 100
-
-    return (
-      <div className="group relative overflow-hidden rounded-xl border border-codebox-border bg-codebox-card/80 backdrop-blur-sm transition-all duration-200 hover:border-codebox-border/60 hover:bg-codebox-card p-4 h-full">
-        <div className="flex flex-col h-full">
-          <div className="flex items-start gap-3">
-            <div className={`flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center bg-gradient-to-br ${from} ${to} ${textColor}`}>
-              <Icon size={20} strokeWidth={1.8} />
-            </div>
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2">
-                <span className="font-semibold text-sm text-codebox-primary truncate">{skill.name}</span>
-                <span className={`text-[10px] px-1.5 py-0.5 rounded font-medium uppercase flex-shrink-0 ${
-                  skill.type === 'system'
-                    ? 'bg-codebox-input text-codebox-secondary'
-                    : 'text-codebox-purple bg-codebox-purple/10'
-                }`}>
-                  {skill.type}
-                </span>
-              </div>
-            </div>
-            <label className="relative inline-block w-9 h-5 flex-shrink-0 cursor-pointer mt-1">
-              <input
-                type="checkbox"
-                checked={skill.enabled}
-                onChange={() => toggleSkill(skill.id)}
-                className="opacity-0 w-0 h-0"
-              />
-              <span className={`absolute cursor-pointer inset-0 rounded-full transition-colors duration-200 ${skill.enabled ? 'bg-codebox-blue' : 'bg-codebox-border'}`}>
-                <span className={`absolute w-3.5 h-3.5 bg-white rounded-full top-0.5 transition-transform duration-200 ${skill.enabled ? 'left-[17px]' : 'left-[3px]'}`} />
-              </span>
-            </label>
-          </div>
-          <div className="flex-1 mt-3">
-            <p className={`text-[12.5px] text-codebox-secondary leading-relaxed transition-all duration-200 ${
-              isExpanded || !descLong ? '' : 'line-clamp-3'
-            }`}>
-              {skill.description}
-            </p>
-            {descLong && (
-              <button
-                onClick={() => toggleExpanded(skill.id)}
-                className="mt-1 flex items-center gap-1 text-[11px] text-codebox-secondary/60 hover:text-codebox-blue transition-colors"
-              >
-                {isExpanded ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
-                {isExpanded ? 'Show less' : 'Show more'}
-              </button>
-            )}
-          </div>
-        </div>
-      </div>
-    )
-  }
+  const closeAllDropdowns = () => { setFilterOpen(false); setSortOpen(false) }
 
   return (
-    <div className="w-full min-h-screen flex flex-col">
-      <div className="flex-1 w-full max-w-[960px] flex flex-col gap-5 px-5 pt-8 pb-32 mx-auto">
-        <div className="flex justify-between items-center border-b border-codebox-border pb-4">
-          <div>
-            <h2 className="text-xl font-semibold text-codebox-primary">Skills &amp; Capabilities</h2>
-            <p className="text-[12.5px] text-codebox-secondary mt-0.5">
-              {skills.length} skills loaded — specialized instructions for your AI agent.
-            </p>
+    <div className="w-full min-h-screen flex flex-col" onClick={closeAllDropdowns}>
+      <div className="flex-1 w-full max-w-[960px] flex flex-col px-5 pt-8 pb-32 mx-auto">
+        <div className="flex items-center justify-between border-b border-codebox-border pb-3 mb-5">
+          <div className="flex items-center gap-2">
+            <h2 className="text-lg font-semibold text-codebox-primary">Skills</h2>
+            <span className="text-xs text-codebox-secondary">{enabledCount} of {skills.length} enabled</span>
           </div>
-          <button className="btn-primary flex items-center gap-1.5">
-            <Plus size={14} />
+          <button className="flex items-center gap-1.5 text-xs bg-codebox-button border border-codebox-border rounded-lg px-3 py-2 text-codebox-primary hover:bg-codebox-button-hover transition-colors">
+            <Plus size={13} />
             <span>Create Skill</span>
           </button>
         </div>
 
-        <div className="flex justify-between items-center gap-3">
-          <div className="flex items-center gap-2 bg-codebox-input border border-codebox-border px-3 py-1.5 rounded-lg w-[260px]">
-            <Search size={14} className="text-codebox-secondary" />
-            <input
-              className="bg-transparent border-none outline-none text-codebox-primary text-[12.5px] w-full"
-              placeholder="Filter skills..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-            />
+        <div className="relative w-full mb-5">
+          <Search size={18} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-codebox-muted pointer-events-none" />
+          <input
+            type="text"
+            className="w-full h-11 bg-codebox-input border border-codebox-border rounded-[10px] pl-11 pr-10 text-codebox-primary text-sm outline-none transition-all focus:bg-codebox-bg focus:border-codebox-border/20"
+            placeholder="Search skills..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+          {search && (
+            <button
+              className="absolute right-3.5 top-1/2 -translate-y-1/2 text-codebox-muted hover:text-codebox-primary transition-colors"
+              onClick={() => setSearch('')}
+            >
+              <X size={16} />
+            </button>
+          )}
+        </div>
+
+        <div className="flex justify-between items-center mb-5">
+          <div className="flex gap-1 bg-black/15 p-[3px] rounded-[10px] border border-white/[0.03]">
+            <button
+              className={`px-4 py-1.5 rounded-lg text-[13.5px] font-medium transition-all ${filter === 'all' ? 'bg-codebox-card text-codebox-primary shadow-sm' : 'text-codebox-secondary hover:text-codebox-primary'}`}
+              onClick={() => setFilter('all')}
+            >
+              All ({skills.length})
+            </button>
+            <button
+              className={`px-4 py-1.5 rounded-lg text-[13.5px] font-medium transition-all ${filter === 'enabled' ? 'bg-codebox-card text-codebox-primary shadow-sm' : 'text-codebox-secondary hover:text-codebox-primary'}`}
+              onClick={() => setFilter('enabled')}
+            >
+              Enabled ({enabledCount})
+            </button>
+            <button
+              className={`px-4 py-1.5 rounded-lg text-[13.5px] font-medium transition-all ${filter === 'disabled' ? 'bg-codebox-card text-codebox-primary shadow-sm' : 'text-codebox-secondary hover:text-codebox-primary'}`}
+              onClick={() => setFilter('disabled')}
+            >
+              Disabled ({skills.length - enabledCount})
+            </button>
           </div>
-          <div className="flex items-center gap-2">
-            <div className="flex gap-1.5">
-              <span
-                className={`px-3 py-1.5 rounded-full text-xs cursor-pointer border border-transparent transition-all ${
-                  filter === 'all' ? 'bg-codebox-primary text-codebox-bg font-medium' : 'bg-codebox-input text-codebox-secondary hover:text-codebox-primary'
-                }`}
-                onClick={() => setFilter('all')}
-              >
-                All ({skills.length})
-              </span>
-              <span
-                className={`px-3 py-1.5 rounded-full text-xs cursor-pointer border border-transparent transition-all ${
-                  filter === 'system' ? 'bg-codebox-primary text-codebox-bg font-medium' : 'bg-codebox-input text-codebox-secondary hover:text-codebox-primary'
-                }`}
-                onClick={() => setFilter('system')}
-              >
-                System ({systemCount})
-              </span>
-              <span
-                className={`px-3 py-1.5 rounded-full text-xs cursor-pointer border border-transparent transition-all ${
-                  filter === 'custom' ? 'bg-codebox-primary text-codebox-bg font-medium' : 'bg-codebox-input text-codebox-secondary hover:text-codebox-primary'
-                }`}
-                onClick={() => setFilter('custom')}
-              >
-                Custom ({customCount})
-              </span>
-            </div>
-            <div className="flex items-center gap-1 ml-3 bg-codebox-input border border-codebox-border rounded-lg p-0.5">
+
+          <div className="flex items-center gap-2.5 relative">
+            <div className="relative">
               <button
-                onClick={() => setViewMode('grid')}
-                className={`p-1.5 rounded-md transition-all ${viewMode === 'grid' ? 'bg-codebox-primary/10 text-codebox-primary' : 'text-codebox-secondary hover:text-codebox-primary'}`}
+                className="flex items-center gap-2 bg-codebox-button border border-codebox-border rounded-lg px-3.5 py-1.5 text-codebox-primary text-[13px] font-medium hover:bg-codebox-button-hover transition-colors"
+                onClick={(e) => { e.stopPropagation(); setSortOpen(!sortOpen); setFilterOpen(false) }}
               >
-                <LayoutGrid size={14} />
+                <span>{sort === 'asc' ? 'Name (A-Z)' : sort === 'desc' ? 'Name (Z-A)' : 'Sort by'}</span>
+                <ChevronDown size={14} className="text-codebox-secondary" />
               </button>
-              <button
-                onClick={() => setViewMode('list')}
-                className={`p-1.5 rounded-md transition-all ${viewMode === 'list' ? 'bg-codebox-primary/10 text-codebox-primary' : 'text-codebox-secondary hover:text-codebox-primary'}`}
-              >
-                <List size={14} />
-              </button>
+              {sortOpen && (
+                <div className="absolute top-10 right-0 bg-codebox-sidebar border border-codebox-border/50 rounded-[10px] shadow-xl py-1.5 w-44 z-50 flex flex-col gap-0.5" onClick={(e) => e.stopPropagation()}>
+                  {[
+                    { val: 'featured', label: 'Featured' },
+                    { val: 'asc', label: 'Name (A-Z)' },
+                    { val: 'desc', label: 'Name (Z-A)' },
+                  ].map((s) => (
+                    <button
+                      key={s.val}
+                      className={`px-3 py-1.5 text-[13px] rounded-md mx-1 text-left transition-colors ${sort === s.val ? 'text-codebox-primary font-medium bg-white/[0.04]' : 'text-codebox-secondary hover:bg-white/[0.06] hover:text-codebox-primary'}`}
+                      onClick={() => { setSort(s.val as typeof sort); setSortOpen(false) }}
+                    >
+                      {s.label}
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
+            <button
+              className="w-[34px] h-[34px] flex items-center justify-center bg-codebox-button border border-codebox-border rounded-lg text-codebox-primary hover:bg-codebox-button-hover transition-colors"
+              title="Submit new skill"
+            >
+              <Plus size={16} />
+            </button>
           </div>
         </div>
 
-        {viewMode === 'grid' ? (
-          <div className="grid grid-cols-[repeat(auto-fill,minmax(380px,1fr))] gap-3.5 auto-rows-fr">
-            {displayed.map((skill) => renderCard(skill))}
-          </div>
-        ) : (
-          <div className="flex flex-col gap-2">
-            {displayed.map((skill) => renderCard(skill))}
-          </div>
-        )}
+        <div className="grid grid-cols-2 gap-3.5 overflow-y-auto pb-5" style={{ alignContent: 'start' }}>
+          {displayed.map((skill) => {
+            const initials = getInitials(skill.name)
+            const gradient = getInitialsGradient(skill.name)
+            return (
+              <div
+                key={skill.id}
+                className="bg-codebox-card border border-codebox-border/60 rounded-[14px] p-5 flex flex-col min-h-[134px] cursor-pointer transition-all duration-200 hover:bg-codebox-card-hover hover:border-white/14 hover:-translate-y-px hover:shadow-lg"
+                onClick={() => setSelectedSkill(skill)}
+              >
+                <div className="flex justify-between items-start mb-3.5">
+                  <div className="flex gap-3.5 items-center">
+                    <div className={`w-10 h-10 rounded-[10px] bg-gradient-to-br ${gradient} flex items-center justify-center flex-shrink-0 text-white text-[13px] font-bold`}>
+                      {initials}
+                    </div>
+                    <div className="flex flex-col">
+                      <div className="text-[15px] font-semibold text-codebox-primary leading-tight mb-0.5 truncate max-w-[180px]">{skill.name}</div>
+                      <div className="text-[12.5px] text-codebox-muted">{skill.type}</div>
+                    </div>
+                  </div>
+                  <button
+                    className={`w-7 h-7 rounded-md flex items-center justify-center transition-all flex-shrink-0 ${
+                      skill.enabled
+                        ? 'text-codebox-green bg-codebox-green/10 hover:bg-red-500/15 hover:text-red-400'
+                        : 'text-codebox-secondary hover:bg-white/8 hover:text-codebox-primary'
+                    }`}
+                    onClick={(e) => { e.stopPropagation(); toggleSkill(skill.id) }}
+                    title={skill.enabled ? 'Click to disable' : 'Click to enable'}
+                  >
+                    {skill.enabled ? <Check size={16} strokeWidth={2.5} /> : <Plus size={18} strokeWidth={2} />}
+                  </button>
+                </div>
+                <p className="text-[13px] text-codebox-secondary/90 leading-relaxed line-clamp-2">{skill.description}</p>
+              </div>
+            )
+          })}
+        </div>
 
         {displayed.length === 0 && (
-          <div className="flex flex-col items-center justify-center py-16 text-codebox-secondary">
-            <Search size={32} className="mb-3 opacity-40" />
-            <p className="text-sm">No skills match your filter</p>
+          <div className="flex flex-col items-center justify-center py-16 text-codebox-muted">
+            <Search size={44} className="mb-3 opacity-40" />
+            <h3 className="text-base text-codebox-secondary font-medium mb-1">No skills found</h3>
+            <p className="text-[13px]">Try searching for a different keyword or resetting your filters.</p>
           </div>
         )}
       </div>
+
+      {selectedSkill && (
+        <>
+          <div
+            className="fixed inset-0 bg-black/50 z-20"
+            onClick={() => setSelectedSkill(null)}
+          />
+          <div
+            className="fixed right-0 top-0 bottom-0 w-[420px] bg-codebox-sidebar border-l border-codebox-border z-30 p-8 flex flex-col justify-between shadow-2xl transition-transform duration-250"
+            style={{ animation: 'drawerSlideIn 0.25s cubic-bezier(0.16, 1, 0.3, 1)' }}
+          >
+            <style>{`@keyframes drawerSlideIn { from { transform: translateX(100%) } to { transform: translateX(0) } }`}</style>
+            <button
+              className="absolute top-5 right-5 text-codebox-secondary hover:text-codebox-primary p-1.5 rounded-md hover:bg-white/5 transition-colors"
+              onClick={() => setSelectedSkill(null)}
+            >
+              <X size={18} />
+            </button>
+            <div>
+              <div className={`w-14 h-14 rounded-[12px] bg-gradient-to-br ${getInitialsGradient(selectedSkill.name)} flex items-center justify-center mb-4 text-white text-lg font-bold`}>
+                {getInitials(selectedSkill.name)}
+              </div>
+              <h2 className="text-xl font-semibold text-codebox-primary mb-1">{selectedSkill.name}</h2>
+              <div className="text-codebox-muted text-[13px] mb-4">
+                <span className={`inline-block px-2 py-0.5 rounded text-[11px] font-medium uppercase ${getBadgeColor(selectedSkill.name)}`}>{selectedSkill.type}</span>
+              </div>
+              <div className="h-px bg-codebox-border mb-4" />
+              <p className="text-codebox-secondary text-sm leading-relaxed mb-6">{selectedSkill.description}</p>
+              <div className="bg-codebox-bg border border-codebox-border rounded-[10px] p-3.5 text-[13px] text-codebox-secondary">
+                <div className="flex justify-between mb-2">
+                  <span>Status</span>
+                  <span className="text-codebox-primary">{selectedSkill.enabled ? 'Enabled' : 'Disabled'}</span>
+                </div>
+                <div className="flex justify-between mb-2">
+                  <span>Type</span>
+                  <span className="text-codebox-primary capitalize">{selectedSkill.type}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Source</span>
+                  <span className="text-codebox-primary">OpenCode / Hermes</span>
+                </div>
+              </div>
+            </div>
+            <button
+              className={`w-full py-3 rounded-[10px] font-semibold text-sm border-none cursor-pointer transition-colors ${
+                selectedSkill.enabled
+                  ? 'bg-red-500 text-white hover:bg-red-600'
+                  : 'bg-codebox-primary text-codebox-bg hover:opacity-90'
+              }`}
+              onClick={() => { toggleSkill(selectedSkill.id); setSelectedSkill({ ...selectedSkill, enabled: !selectedSkill.enabled }) }}
+            >
+              {selectedSkill.enabled ? 'Disable Skill' : 'Enable Skill'}
+            </button>
+          </div>
+        </>
+      )}
     </div>
   )
 }
