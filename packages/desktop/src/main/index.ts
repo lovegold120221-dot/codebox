@@ -233,6 +233,27 @@ ipcMain.handle('db:skill:seedFromOpenCode', async () => {
   return { count: seeded.length, skills: seeded }
 })
 
+ipcMain.handle('db:automation:list', async (_e, userId: string) => {
+  const db = getDb()
+  return db.automation.findMany({ where: { userId }, orderBy: { createdAt: 'desc' } })
+})
+
+ipcMain.handle('db:automation:create', async (_e, data: { userId: string; name: string; prompt: string; schedule: string; type?: string }) => {
+  const db = getDb()
+  return db.automation.create({ data })
+})
+
+ipcMain.handle('db:automation:update', async (_e, id: string, data: { name?: string; prompt?: string; schedule?: string; enabled?: boolean; lastRun?: Date; nextRun?: Date }) => {
+  const db = getDb()
+  return db.automation.update({ where: { id }, data })
+})
+
+ipcMain.handle('db:automation:delete', async (_e, id: string) => {
+  const db = getDb()
+  await db.automation.delete({ where: { id } })
+  return true
+})
+
 ipcMain.handle('google:auth:init', async (_e, credentialsPath?: string) => {
   return GoogleService.auth.init(credentialsPath)
 })

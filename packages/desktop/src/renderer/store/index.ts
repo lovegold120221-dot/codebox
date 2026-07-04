@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import { getSkillManager } from '@/lib/skills'
 import { getMemoryStore } from '@/lib/memory'
+import { getAutomationManager } from '@/lib/automations'
 import { executePrompt, streamPrompt, getAvailableProviders, getOnlineProviders } from '@/lib/providers/client'
 import { ProviderInfo, EBURON_ALIASES, EBURON_DISPLAY_NAMES } from '@/lib/providers/types'
 
@@ -41,12 +42,26 @@ export interface ModelDef {
   isDefault?: boolean
 }
 
+export interface AutomationDef {
+  id: string
+  userId: string
+  name: string
+  prompt: string
+  schedule: string
+  type: string
+  enabled: boolean
+  lastRun: string | null
+  nextRun: string | null
+  createdAt: string
+}
+
 interface AppState {
   activeView: 'new-thread' | 'chat' | 'automations' | 'skills' | 'settings' | 'memory'
   activeThreadId: string | null
   threads: Thread[]
   messages: Record<string, Message[]>
   skills: SkillDef[]
+  automations: AutomationDef[]
   models: ModelDef[]
   activeModel: string
   activeMode: 'local' | 'worktree' | 'cloud'
@@ -71,6 +86,10 @@ interface AppState {
   updateMessage: (threadId: string, msgId: string, updates: Partial<Message>) => void
   toggleSkill: (id: string) => void
   loadSkills: () => Promise<void>
+  loadAutomations: (userId: string) => Promise<void>
+  addAutomation: (data: { userId: string; name: string; prompt: string; schedule: string; type?: string }) => Promise<void>
+  toggleAutomation: (id: string) => void
+  removeAutomation: (id: string) => Promise<void>
   setActiveModel: (id: string) => void
   setActiveMode: (mode: AppState['activeMode']) => void
   toggleSidebar: () => void
@@ -93,6 +112,7 @@ export const useStore = create<AppState>((set, get) => ({
   threads: [],
   messages: {},
   skills: [],
+  automations: [],
   models: EBURON_ALIASES.map((alias) => ({
     id: alias,
     name: EBURON_DISPLAY_NAMES[alias] || alias,
@@ -158,6 +178,40 @@ export const useStore = create<AppState>((set, get) => ({
           content: s.content,
         })),
       })
+    } catch {}
+  },
+  loadAutomations: async (userId: string) => {
+    const api = (window as any).electronAPI?.db?.automation
+    if (!api) return
+    try {
+      const list = await api.list(userId)
+      set({ automations: list })
+    } catch {}
+  },
+  addAutomation: async (data) => {
+    const api = (window as any).electronAPI?.db?.automation
+    if (!api) return
+    try {
+      const created = await api.create(data)
+      set((s) => ({ automations: [created, ...s.automations] }))
+    } catch {}
+  },
+  toggleAutomation: (id) => {
+    const auto = get().automations.find((a) => a.id === id)
+    if (!auto) return
+    const newEnabled = !auto.enabled
+    set((s) => ({
+      automations: s.automations.map((a) => (a.id === id ? { ...a, enabled: newEnabled } : a)),
+    }))
+    const api = (window as any).electronAPI?.db?.automation
+    if (api) api.update(id, { enabled: newEnabled }).catch(() => {})
+  },
+  removeAutomation: async (id) => {
+    const api = (window as any).electronAPI?.db?.automation
+    if (!api) return
+    try {
+      await api.delete(id)
+      set((s) => ({ automations: s.automations.filter((a) => a.id !== id) }))
     } catch {}
   },
   setActiveModel: (id) => set({ activeModel: id }),
