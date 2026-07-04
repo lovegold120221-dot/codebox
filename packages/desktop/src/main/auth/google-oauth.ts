@@ -1,7 +1,7 @@
 import { google } from 'googleapis'
 import * as http from 'http'
 import { AddressInfo } from 'net'
-import { shell } from 'electron'
+import { openInChrome } from '../browser'
 import { loadClientCredentials, getDefaultCredentialsPath, GoogleClientCredentials } from '../config/google'
 import { saveTokens, loadTokens, clearTokens, GoogleTokenSet, isTokenExpired } from './token-store'
 
@@ -108,7 +108,7 @@ export async function authenticate(): Promise<boolean> {
         prompt: 'consent',
         redirect_uri: `http://localhost:${port}`,
       })
-      shell.openExternal(authUrl)
+      openInChrome(authUrl)
     })
 
     server.on('error', reject)
