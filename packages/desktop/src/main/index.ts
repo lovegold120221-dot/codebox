@@ -207,8 +207,23 @@ ipcMain.handle('db:skill:seedFromOpenCode', async () => {
     const content = fs.readFileSync(skillPath, 'utf-8')
     const nameMatch = content.match(/^name:\s*(.+)$/m)
     const descMatch = content.match(/^description:\s*"(.+)"$/m)
-    const name = nameMatch ? nameMatch[1].trim() : path.basename(path.dirname(skillPath))
-    const description = descMatch ? descMatch[1].trim() : ''
+    const rawName = nameMatch ? nameMatch[1].trim() : path.basename(path.dirname(skillPath))
+    const rawDesc = descMatch ? descMatch[1].trim() : ''
+
+    // Capitalize first letter of each word in the name
+    const name = rawName.split(/\s+/).map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')
+
+    // Ensure description is at least 2 sentences
+    let description = rawDesc
+    const sentences = description.split(/(?<=[.!?])\s+/).filter((s) => s.length > 10)
+    if (sentences.length < 2) {
+      const skillDir = path.basename(path.dirname(skillPath))
+      const category = skillDir.includes('-') ? skillDir.split('-')[0] : skillDir
+      const secondSentence = `This skill provides specialized instructions and tooling for ${category.replace(/[-_]/g, ' ')} workflows, enabling the agent to handle related tasks autonomously.`
+      description = sentences.length === 1
+        ? `${sentences[0]} ${secondSentence}`
+        : `${secondSentence} It configures the agent with the right context, commands, and best practices for this domain.`
+    }
 
     if (seenNames.has(name)) continue
     seenNames.add(name)
@@ -227,6 +242,8 @@ ipcMain.handle('db:skill:seedFromOpenCode', async () => {
         },
       })
       seeded.push(name)
+    } else if (existing.description !== description || existing.name !== name) {
+      await db.skill.update({ where: { id: existing.id }, data: { name, description } })
     }
   }
 
