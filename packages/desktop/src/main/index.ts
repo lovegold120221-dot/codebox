@@ -214,14 +214,18 @@ ipcMain.handle('db:skill:seedFromOpenCode', async () => {
   const opencodeNames = new Set<string>()
   const hermesNames = new Set<string>()
 
-  // First pass: collect all names
+  function normalizeName(name: string): string {
+    return name.toLowerCase().replace(/[-_\s]/g, '')
+  }
+
+  // First pass: collect all names (normalized for dedup)
   for (const entry of skills) {
     const content = fs.readFileSync(entry.path, 'utf-8')
     const nameMatch = content.match(/^name:\s*(.+)$/m)
     const rawName = nameMatch ? nameMatch[1].trim() : path.basename(path.dirname(entry.path))
     const name = rawName.split(/\s+/).map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')
     const setName = entry.source === 'opencode' ? opencodeNames : hermesNames
-    setName.add(name)
+    setName.add(normalizeName(name))
   }
 
   // Second pass: seed/dedupe with category assignment
@@ -235,17 +239,18 @@ ipcMain.handle('db:skill:seedFromOpenCode', async () => {
     const rawDesc = descMatch ? descMatch[1].trim() : ''
 
     const name = rawName.split(/\s+/).map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')
+    const normalized = normalizeName(name)
 
     // Assign category
     let category = entry.source
     // If this skill exists in opencode and we're seeing it from hermes, mark as other
-    if (entry.source === 'hermes' && opencodeNames.has(name)) {
+    if (entry.source === 'hermes' && opencodeNames.has(normalized)) {
       category = 'other'
     }
 
-    // If name already finalized as a different category, collapse to other
-    if (seenFinal.has(name)) continue
-    seenFinal.add(name)
+    // Skip duplicates (normalized name already seen)
+    if (seenFinal.has(normalized)) continue
+    seenFinal.add(normalized)
 
     let description = rawDesc
     const sentences = description.split(/(?<=[.!?])\s+/).filter((s) => s.length > 10)
@@ -282,7 +287,18 @@ ipcMain.handle('db:skill:seedFromOpenCode', async () => {
     }
   }
 
-  return { count: seeded.length, updated: updatedNames.length, skills: seeded }
+  // Cleanup: delete system skills that no longer exist on disk
+  const allDbSkills = await db.skill.findMany({ where: { type: 'system' } })
+  const validNames = new Set(seenFinal)
+  let deletedCount = 0
+  for (const dbSkill of allDbSkills) {
+    if (!validNames.has(normalizeName(dbSkill.name))) {
+      await db.skill.delete({ where: { id: dbSkill.id } })
+      deletedCount++
+    }
+  }
+
+  return { count: seeded.length, updated: updatedNames.length, deleted: deletedCount, skills: seeded }
 })
 
 ipcMain.handle('db:skill:createFromPrompt', async (_e, data: { userId: string; prompt: string }) => {
