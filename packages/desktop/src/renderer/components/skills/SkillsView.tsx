@@ -1,150 +1,24 @@
 import { useStore } from '@/store'
 import { useState, useMemo, useEffect } from 'react'
-import {
-  Code2, Shield, Layers, PenTool, Search, Plus, Globe, Monitor, Smartphone, Bot, Brain,
-  Wrench, FileText, Video, Image, Music, MessageSquare, GitBranch, Terminal, Zap, Eye,
-  BookOpen, Sparkles, LayoutGrid, List, ChevronDown, ChevronUp, Palette, Database,
-  Cloud, Lock, Cpu, Server, Network, HardDrive, Radio, Activity, Anchor, Atom,
-  Award, Banknote, BarChart, Battery, Bell, Bike, Binoculars, Bluetooth, Box,
-  Briefcase, Bug, Building, Camera, Car, Cassette, Cast, Clipboard, Clock, CloudSun,
-  Clover, Compass, Cone, Contact, Cookie, Copy, CreditCard, Crop, Cross, Crown,
-  Cup, Cursor, Dice, Disc, Dna, Door, Download, Droplet, Ear, Egg, Eraser,
-  Fan, Feather, Fingerprint, Flag, Flame, Flashlight, Flower, Folder, Footprints,
-  ForkKnife, Framer, Frown, Gamepad, Gauge, Gem, Ghost, Gift, GlassWater, Glasses,
-  Globe2, Grab, Hammer, Hand, Handshake, Hash, Headphones, Heart, HeartPulse,
-  Hexagon, History, Home, Hourglass, IceCream, IdCard, Infinity, Joystick, Key,
-  Keyboard, Lamp, Landmark, Laptop, Leaf, Library, LifeBuoy, Lightbulb, Link,
-  ListMusic, ListVideo, Locate, LockKeyhole, LogIn, LogOut, Luggage, Magnet,
-  Mail, Map, MapPin, Martini, Maximize, Medal, Megaphone, MemoryStick, Menu,
-  Merge, MessagesSquare, Mic, Microscope, Microwave, Minimize, Minus, MonitorCheck,
-  MonitorDot, Moon, Mountain, Mouse, Move, Navigation, Newspaper, Nut, Octagon,
-  Option, Orbit, Package, Paintbrush, PaintRoller, Paperclip, ParkingCircle,
-  PartyPopper, Pause, PawPrint, PcCase, Pen, Pencil, PersonStanding, Phone,
-  Pi, Piano, Pickaxe, PictureInPicture, PiggyBank, Pill, Pin, Pipette, Plane,
-  Play, Plug, PlusCircle, Pocket, Podcast, Pointer, Popcorn, Power, PowerOff,
-  Presentation, Printer, Projector, Puzzle, QrCode, Quote, Radar, RadioReceiver,
-  Rainbow, Receipt, RectangleHorizontal, RectangleVertical, Recycle, Redo,
-  Refrigerator, Regex, Repeat, Repeat2, Replace, Reply, Rewind, Ribbon, Rocket,
-  RockingChair, RollerCoaster, Rotate3D, Rows, Rss, Ruler, Sailboat, Scale,
-  Scan, Scissors, ScreenShare, Scroll, SdCard, Seal, SearchCheck, SearchX,
-  Send, SeparatorHorizontal, SeparatorVertical, ServerCrash, Settings, Shapes,
-  Share, Share2, Sheet, Shell, ShieldCheck, ShieldHalf, ShieldOff, Ship,
-  Shirt, ShoppingBag, ShoppingCart, Shovel, ShowerHead, Shrink, Shuffle,
-  Sidebar, Sigma, Signpost, Siren, Skeleton, Skull, SlidersHorizontal,
-  SlidersVertical, SmartphoneNfc, Smile, Snail, Snowflake, Sofa, SortAsc,
-  SortDesc, Speaker, Speech, Spline, Split, SprayCan, Sprout, Square,
-  SquareActivity, SquareArrowDown, SquareArrowLeft, SquareArrowRight,
-  SquareArrowUp, SquareAsterisk, SquareCheck, SquareChevronDown,
-  SquareChevronLeft, SquareChevronRight, SquareChevronUp, SquareCode,
-  SquareDashed, SquareDot, SquareFunction, SquareKanban, SquareLibrary,
-  SquareM, SquareMenu, SquareMinus, SquareMousePointer, SquareParking,
-  SquarePen, SquarePercent, SquarePi, SquarePilcrow, SquarePlay,
-  SquarePlus, SquarePower, SquareRadical, SquareScissors, SquareSigma,
-  SquareSlash, SquareSplitHorizontal, SquareSquare, SquareStack,
-  SquareTerminal, SquareToggle, SquareToggleHorizontal, SquareUser,
-  SquareUserRound, SquareX, Squircle, Stamp, Star, StarHalf, Stethoscope,
-  Sticker, StickyNote, StopCircle, Store, StretchHorizontal, StretchVertical,
-  Strikethrough, Subscript, Sun, SunDim, SunMedium, SunMoon, Sunrise,
-  Sunset, Superscript, SwatchBook, SwipeDown, SwipeLeft, SwipeRight,
-  SwipeUp, SwitchCamera, Sword, Syringe, Table, Table2, TableProperties,
-  Tablet, Tablets, Tag, Tags, Target, Tent, TestTube, TestTubes, Text,
-  TextCursor, TextQuote, TextSearch, Theater, Thermometer, ThumbsDown,
-  ThumbsUp, Ticket, Timer, ToggleLeft, ToggleRight, Toilet, Tornado,
-  TowerControl, ToyBrick, Tractor, TrafficCone, Train, TrainTrack,
-  TramFront, Trash, Trash2, TreeDeciduous, TreePine, Trees, Trello,
-  Triangle, TriangleAlert, TriangleRight, Trophy, Truck, Turtle,
-  Tv, Twitch, Type, Umbrella, Underline, Undo, Ungroup, Unlink,
-  Unplug, Unsubscribe, Upload, Usb, User, UserCheck, UserCog,
-  UserMinus, UserPlus, UserRound, UserRoundCheck, UserRoundCog,
-  UserRoundMinus, UserRoundPlus, UserRoundSearch, UserRoundX,
-  UserSearch, UserX, Users, Utensils, UtilityPole, Variable,
-  Vault, Vegan, VenetianMask, Vibrate, VibrateOff, VideoOff,
-  Videotape, View, Voicemail, Volume, Volume1, Volume2, VolumeX,
-  Vote, Wallet, Wallpaper, Wand, WandSparkles, Warehouse, WashingMachine,
-  Watch, Waves, Waypoints, Webcam, Webhook, Weight, Wheat, WheatOff,
-  WholeWord, Wifi, WifiOff, Wind, Wine, Worm, WrapText, Wrench,
-  X, XCircle, XOctagon, XSquare, Youtube, ZapOff, ZoomIn, ZoomOut,
-} from 'lucide-react'
+import * as LucideIcons from 'lucide-react'
+import { Search, Plus, LayoutGrid, List, ChevronDown, ChevronUp } from 'lucide-react'
 
-const ALL_ICONS = [
-  Code2, Shield, Layers, PenTool, Globe, Monitor, Smartphone, Bot, Brain,
-  Wrench, FileText, Video, Image, Music, MessageSquare, GitBranch, Terminal,
-  Zap, Eye, BookOpen, Sparkles, Palette, Database, Cloud, Lock, Cpu, Server,
-  Network, HardDrive, Radio, Activity, Anchor, Atom, Award, Banknote, BarChart,
-  Battery, Bell, Bike, Binoculars, Bluetooth, Box, Briefcase, Bug, Building,
-  Camera, Car, Cassette, Cast, Clipboard, Clock, CloudSun, Clover, Compass,
-  Cone, Contact, Cookie, Copy, CreditCard, Crop, Cross, Crown, Cup, Cursor,
-  Dice, Disc, Dna, Door, Download, Droplet, Ear, Egg, Eraser, Fan, Feather,
-  Fingerprint, Flag, Flame, Flashlight, Flower, Folder, Footprints, ForkKnife,
-  Framer, Frown, Gamepad, Gauge, Gem, Ghost, Gift, GlassWater, Glasses,
-  Globe2, Grab, Hammer, Hand, Handshake, Hash, Headphones, Heart, HeartPulse,
-  Hexagon, History, Home, Hourglass, IceCream, IdCard, Infinity, Joystick,
-  Key, Keyboard, Lamp, Landmark, Laptop, Leaf, Library, LifeBuoy, Lightbulb,
-  Link, ListMusic, ListVideo, Locate, LockKeyhole, LogIn, LogOut, Luggage,
-  Magnet, Mail, Map, MapPin, Martini, Maximize, Medal, Megaphone, MemoryStick,
-  Menu, Merge, MessagesSquare, Mic, Microscope, Microwave, Minimize, Minus,
-  MonitorCheck, MonitorDot, Moon, Mountain, Mouse, Move, Navigation, Newspaper,
-  Nut, Octagon, Option, Orbit, Package, Paintbrush, PaintRoller, Paperclip,
-  ParkingCircle, PartyPopper, Pause, PawPrint, PcCase, Pen, Pencil,
-  PersonStanding, Phone, Pi, Piano, Pickaxe, PictureInPicture, PiggyBank,
-  Pill, Pin, Pipette, Plane, Play, Plug, PlusCircle, Pocket, Podcast, Pointer,
-  Popcorn, Power, PowerOff, Presentation, Printer, Projector, Puzzle, QrCode,
-  Quote, Radar, RadioReceiver, Rainbow, Receipt, Recycle, Redo, Refrigerator,
-  Regex, Repeat, Repeat2, Replace, Reply, Rewind, Ribbon, Rocket, RockingChair,
-  RollerCoaster, Rotate3D, Rows, Rss, Ruler, Sailboat, Scale, Scan, Scissors,
-  ScreenShare, Scroll, SdCard, Seal, SearchCheck, SearchX, Send,
-  SeparatorHorizontal, SeparatorVertical, ServerCrash, Settings, Shapes,
-  Share, Share2, Sheet, Shell, ShieldCheck, ShieldHalf, ShieldOff, Ship,
-  Shirt, ShoppingBag, ShoppingCart, Shovel, ShowerHead, Shrink, Shuffle,
-  Sidebar, Sigma, Signpost, Siren, Skeleton, Skull, SlidersHorizontal,
-  SlidersVertical, SmartphoneNfc, Smile, Snail, Snowflake, Sofa, SortAsc,
-  SortDesc, Speaker, Speech, Spline, Split, SprayCan, Sprout, Square,
-  SquareActivity, SquareArrowDown, SquareArrowLeft, SquareArrowRight,
-  SquareArrowUp, SquareAsterisk, SquareCheck, SquareChevronDown,
-  SquareChevronLeft, SquareChevronRight, SquareChevronUp, SquareCode,
-  SquareDashed, SquareDot, SquareFunction, SquareKanban, SquareLibrary,
-  SquareM, SquareMenu, SquareMinus, SquareMousePointer, SquareParking,
-  SquarePen, SquarePercent, SquarePi, SquarePilcrow, SquarePlay,
-  SquarePlus, SquarePower, SquareRadical, SquareScissors, SquareSigma,
-  SquareSlash, SquareSplitHorizontal, SquareSquare, SquareStack,
-  SquareTerminal, SquareToggle, SquareToggleHorizontal, SquareUser,
-  SquareUserRound, SquareX, Squircle, Stamp, Star, StarHalf, Stethoscope,
-  Sticker, StickyNote, StopCircle, Store, StretchHorizontal, StretchVertical,
-  Strikethrough, Subscript, Sun, SunDim, SunMedium, SunMoon, Sunrise,
-  Sunset, Superscript, SwatchBook, SwipeDown, SwipeLeft, SwipeRight,
-  SwipeUp, SwitchCamera, Sword, Syringe, Table, Table2, TableProperties,
-  Tablet, Tablets, Tag, Tags, Target, Tent, TestTube, TestTubes, Text,
-  TextCursor, TextQuote, TextSearch, Theater, Thermometer, ThumbsDown,
-  ThumbsUp, Ticket, Timer, ToggleLeft, ToggleRight, Toilet, Tornado,
-  TowerControl, ToyBrick, Tractor, TrafficCone, Train, TrainTrack,
-  TramFront, Trash, Trash2, TreeDeciduous, TreePine, Trees, Trello,
-  Triangle, TriangleAlert, TriangleRight, Trophy, Truck, Turtle,
-  Tv, Twitch, Type, Umbrella, Underline, Undo, Ungroup, Unlink,
-  Unplug, Unsubscribe, Upload, Usb, User, UserCheck, UserCog,
-  UserMinus, UserPlus, UserRound, UserRoundCheck, UserRoundCog,
-  UserRoundMinus, UserRoundPlus, UserRoundSearch, UserRoundX,
-  UserSearch, UserX, Users, Utensils, UtilityPole, Variable,
-  Vault, Vegan, VenetianMask, Vibrate, VibrateOff, VideoOff,
-  Videotape, View, Voicemail, Volume, Volume1, Volume2, VolumeX,
-  Vote, Wallet, Wallpaper, Wand, WandSparkles, Warehouse, WashingMachine,
-  Watch, Waves, Waypoints, Webcam, Webhook, Weight, Wheat, WheatOff,
-  WholeWord, Wifi, WifiOff, Wind, Wine, Worm, WrapText, X, XCircle,
-  XOctagon, XSquare, Youtube, ZapOff, ZoomIn, ZoomOut,
-]
+const ICON_NAMES = Object.keys(LucideIcons).filter(
+  (k) => k[0] === k[0].toUpperCase() && !k.endsWith('Icon') && typeof LucideIcons[k as keyof typeof LucideIcons] === 'object'
+)
 
 function hashString(str: string): number {
   let hash = 0
   for (let i = 0; i < str.length; i++) {
-    const char = str.charCodeAt(i)
-    hash = ((hash << 5) - hash) + char
+    hash = ((hash << 5) - hash) + str.charCodeAt(i)
     hash |= 0
   }
   return Math.abs(hash)
 }
 
-function getIconForSkill(name: string): typeof Code2 {
-  const index = hashString(name) % ALL_ICONS.length
-  return ALL_ICONS[index]
+function getIconForSkill(name: string) {
+  const iconName = ICON_NAMES[hashString(name) % ICON_NAMES.length]
+  return LucideIcons[iconName as keyof typeof LucideIcons] as React.ComponentType<{ size?: number; strokeWidth?: number }>
 }
 
 const GRADIENT_PAIRS = [
