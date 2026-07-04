@@ -7,6 +7,8 @@ import { SafeLogger } from './providers/logger'
 import { getAllAliases, getProviderConfig } from './providers/config'
 import { getDb, disconnectDb } from './db'
 import { GoogleService } from './services'
+import { startScheduler, stopScheduler } from './scheduler'
+import cp from 'cron-parser'
 
 let mainWindow: BrowserWindow | null = null
 
@@ -43,9 +45,11 @@ app.whenReady().then(() => {
     callback({ path: path.normalize(decodeURIComponent(url)) })
   })
   createWindow()
+  startScheduler()
 })
 
 app.on('window-all-closed', async () => {
+  stopScheduler()
   await disconnectDb()
   app.quit()
 })
@@ -179,12 +183,17 @@ ipcMain.handle('db:skill:seedFromOpenCode', async () => {
     })
   }
 
-  const skillDirs: string[] = []
+  interface SkillEntry {
+    path: string
+    source: string
+  }
+
+  const skills: SkillEntry[] = []
 
   const opencodeDir = path.join(os.homedir(), '.opencode', 'skills')
   if (fs.existsSync(opencodeDir)) {
     for (const e of fs.readdirSync(opencodeDir, { withFileTypes: true })) {
-      if (e.isDirectory()) skillDirs.push(path.join(opencodeDir, e.name, 'SKILL.md'))
+      if (e.isDirectory()) skills.push({ path: path.join(opencodeDir, e.name, 'SKILL.md'), source: 'opencode' })
     }
   }
 
@@ -194,39 +203,60 @@ ipcMain.handle('db:skill:seedFromOpenCode', async () => {
       for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
         const full = path.join(dir, e.name)
         if (e.isDirectory()) walk(full)
-        else if (e.name === 'SKILL.md') skillDirs.push(full)
+        else if (e.name === 'SKILL.md') skills.push({ path: full, source: 'hermes' })
       }
     }
     walk(hermesDir)
   }
 
   const seeded: string[] = []
-  const seenNames = new Set<string>()
+  const updatedNames: string[] = []
+  const opencodeNames = new Set<string>()
+  const hermesNames = new Set<string>()
 
-  for (const skillPath of skillDirs) {
-    const content = fs.readFileSync(skillPath, 'utf-8')
+  // First pass: collect all names
+  for (const entry of skills) {
+    const content = fs.readFileSync(entry.path, 'utf-8')
+    const nameMatch = content.match(/^name:\s*(.+)$/m)
+    const rawName = nameMatch ? nameMatch[1].trim() : path.basename(path.dirname(entry.path))
+    const name = rawName.split(/\s+/).map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')
+    const setName = entry.source === 'opencode' ? opencodeNames : hermesNames
+    setName.add(name)
+  }
+
+  // Second pass: seed/dedupe with category assignment
+  const seenFinal = new Set<string>()
+
+  for (const entry of skills) {
+    const content = fs.readFileSync(entry.path, 'utf-8')
     const nameMatch = content.match(/^name:\s*(.+)$/m)
     const descMatch = content.match(/^description:\s*"(.+)"$/m)
-    const rawName = nameMatch ? nameMatch[1].trim() : path.basename(path.dirname(skillPath))
+    const rawName = nameMatch ? nameMatch[1].trim() : path.basename(path.dirname(entry.path))
     const rawDesc = descMatch ? descMatch[1].trim() : ''
 
-    // Capitalize first letter of each word in the name
     const name = rawName.split(/\s+/).map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')
 
-    // Ensure description is at least 2 sentences
+    // Assign category
+    let category = entry.source
+    // If this skill exists in opencode and we're seeing it from hermes, mark as other
+    if (entry.source === 'hermes' && opencodeNames.has(name)) {
+      category = 'other'
+    }
+
+    // If name already finalized as a different category, collapse to other
+    if (seenFinal.has(name)) continue
+    seenFinal.add(name)
+
     let description = rawDesc
     const sentences = description.split(/(?<=[.!?])\s+/).filter((s) => s.length > 10)
     if (sentences.length < 2) {
-      const skillDir = path.basename(path.dirname(skillPath))
-      const category = skillDir.includes('-') ? skillDir.split('-')[0] : skillDir
-      const secondSentence = `This skill provides specialized instructions and tooling for ${category.replace(/[-_]/g, ' ')} workflows, enabling the agent to handle related tasks autonomously.`
+      const skillDir = path.basename(path.dirname(entry.path))
+      const dirCategory = skillDir.includes('-') ? skillDir.split('-')[0] : skillDir
+      const secondSentence = `This skill provides specialized instructions and tooling for ${dirCategory.replace(/[-_]/g, ' ')} workflows, enabling the agent to handle related tasks autonomously.`
       description = sentences.length === 1
         ? `${sentences[0]} ${secondSentence}`
         : `${secondSentence} It configures the agent with the right context, commands, and best practices for this domain.`
     }
-
-    if (seenNames.has(name)) continue
-    seenNames.add(name)
 
     const existing = await db.skill.findFirst({ where: { name } })
     if (!existing) {
@@ -236,18 +266,85 @@ ipcMain.handle('db:skill:seedFromOpenCode', async () => {
           name,
           description,
           type: 'system',
+          category,
           enabled: true,
-          icon: path.basename(path.dirname(skillPath)),
+          icon: path.basename(path.dirname(entry.path)),
           content,
         },
       })
       seeded.push(name)
-    } else if (existing.description !== description || existing.name !== name) {
-      await db.skill.update({ where: { id: existing.id }, data: { name, description } })
+    } else if (existing.category !== category || existing.description !== description) {
+      await db.skill.update({
+        where: { id: existing.id },
+        data: { description, category },
+      })
+      updatedNames.push(name)
     }
   }
 
-  return { count: seeded.length, skills: seeded }
+  return { count: seeded.length, updated: updatedNames.length, skills: seeded }
+})
+
+ipcMain.handle('db:skill:createFromPrompt', async (_e, data: { userId: string; prompt: string }) => {
+  const db = getDb()
+  const orchestrator = getOrchestrator()
+
+  const skillPrompt = `You are a skill creation engine. Based on the user's request, generate a skill definition.
+
+CRITICAL: Your entire response must be a valid JSON object with these fields:
+{
+  "name": "Skill Name (capitalized, 1-4 words)",
+  "description": "2-3 sentence description of what this skill does and when to use it",
+  "content": "Full skill instructions with system prompt, triggers, and workflow guidance"
+}
+
+The skill name must be unique and descriptive. The content should be comprehensive — include system prompt style instructions, trigger conditions, workflow steps, and configuration guidance.
+
+User request: ${data.prompt}
+
+Respond ONLY with the JSON object, no other text.`
+
+  try {
+    const response = await orchestrator.execute(skillPrompt, undefined, undefined)
+    let parsed
+    try {
+      parsed = JSON.parse(response.content)
+    } catch {
+      const jsonMatch = response.content.match(/\{[\s\S]*\}/)
+      if (jsonMatch) parsed = JSON.parse(jsonMatch[0])
+      else throw new Error('Could not parse skill from AI response')
+    }
+
+    const existing = await db.skill.findFirst({ where: { name: parsed.name } })
+    if (existing) {
+      await db.skill.update({
+        where: { id: existing.id },
+        data: {
+          description: parsed.description,
+          content: parsed.content,
+          type: 'custom',
+          category: 'custom',
+        },
+      })
+      return { success: true, skill: { ...existing, description: parsed.description, content: parsed.content, type: 'custom', category: 'custom' }, updated: true }
+    }
+
+    const skill = await db.skill.create({
+      data: {
+        userId: data.userId,
+        name: parsed.name,
+        description: parsed.description,
+        type: 'custom',
+        category: 'custom',
+        enabled: true,
+        icon: parsed.name.toLowerCase().replace(/\s+/g, '-'),
+        content: parsed.content,
+      },
+    })
+    return { success: true, skill, updated: false }
+  } catch (err: any) {
+    return { success: false, error: err.message }
+  }
 })
 
 ipcMain.handle('db:automation:list', async (_e, userId: string) => {
@@ -380,6 +477,45 @@ ipcMain.handle('provider:execute', async (_event, payload: {
     finishReason: response.finishReason,
     modelUsed: response.modelUsed,
   }
+})
+
+ipcMain.handle('scheduler:runNow', async (_e, automationId: string) => {
+  const db = getDb()
+  const auto = await db.automation.findUnique({ where: { id: automationId } })
+  if (!auto || !auto.enabled) return { success: false, error: 'Automation not found or not enabled' }
+
+  try {
+    const orchestrator = getOrchestrator()
+    const response = await orchestrator.execute(auto.prompt, undefined, undefined)
+    const now = new Date()
+    let nextRun: Date | null = null
+    try {
+      const interval = cp.parse(auto.schedule, { currentDate: now })
+      const next = interval.next().value
+      nextRun = next || null
+    } catch {}
+    await db.automation.update({
+      where: { id: auto.id },
+      data: { lastRun: now, nextRun },
+    })
+    return { success: true, content: response.content, tokensUsed: response.tokensUsed, modelUsed: response.modelUsed }
+  } catch (err: any) {
+    return { success: false, error: err.message }
+  }
+})
+
+ipcMain.handle('scheduler:computeNextRun', async (_e, cronExpr: string) => {
+  try {
+    const interval = cp.parse(cronExpr)
+    const next = interval.next().value
+    return { nextRun: (next || new Date()).toISOString() }
+  } catch (err: any) {
+    return { error: err.message }
+  }
+})
+
+ipcMain.handle('scheduler:status', async () => {
+  return { running: true, pollIntervalMs: 60_000 }
 })
 
 let streamBuffer: string[] = []

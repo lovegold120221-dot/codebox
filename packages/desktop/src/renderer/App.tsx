@@ -57,6 +57,7 @@ export default function App() {
         </div>
         {showComposer && <Composer />}
         <TerminalPane />
+      </main>
       <BrowserPane />
       <VoiceOrb />
       <Toast />

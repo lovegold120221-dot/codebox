@@ -98,7 +98,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
       create: (data: any): Promise<any> => ipcRenderer.invoke('db:skill:create', data),
       update: (id: string, data: any): Promise<any> => ipcRenderer.invoke('db:skill:update', id, data),
       delete: (id: string): Promise<boolean> => ipcRenderer.invoke('db:skill:delete', id),
-      seedFromOpenCode: (): Promise<{ count: number; skills: string[] }> => ipcRenderer.invoke('db:skill:seedFromOpenCode'),
+      seedFromOpenCode: (): Promise<{ count: number; skills: string[]; updated: number }> => ipcRenderer.invoke('db:skill:seedFromOpenCode'),
+      createFromPrompt: (data: { userId: string; prompt: string }): Promise<{ success: boolean; skill?: any; error?: string }> =>
+        ipcRenderer.invoke('db:skill:createFromPrompt', data),
     },
     automation: {
       list: (userId: string): Promise<any[]> => ipcRenderer.invoke('db:automation:list', userId),
@@ -106,6 +108,15 @@ contextBridge.exposeInMainWorld('electronAPI', {
       update: (id: string, data: any): Promise<any> => ipcRenderer.invoke('db:automation:update', id, data),
       delete: (id: string): Promise<boolean> => ipcRenderer.invoke('db:automation:delete', id),
     },
+  },
+
+  scheduler: {
+    runNow: (automationId: string): Promise<{ success: boolean; content?: string; error?: string; tokensUsed?: number; modelUsed?: string }> =>
+      ipcRenderer.invoke('scheduler:runNow', automationId),
+    computeNextRun: (cronExpr: string): Promise<{ nextRun?: string; error?: string }> =>
+      ipcRenderer.invoke('scheduler:computeNextRun', cronExpr),
+    status: (): Promise<{ running: boolean; pollIntervalMs: number }> =>
+      ipcRenderer.invoke('scheduler:status'),
   },
 
   provider: {

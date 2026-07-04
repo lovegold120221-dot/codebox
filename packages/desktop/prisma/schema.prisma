@@ -74,6 +74,7 @@ model Skill {
   name         String
   description  String    @default("")
   type         String    @default("custom")
+  category     String    @default("other")
   enabled      Boolean   @default(true)
   icon         String?
   content      String?

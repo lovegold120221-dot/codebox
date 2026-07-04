@@ -30,6 +30,7 @@ export interface SkillDef {
   name: string
   description: string
   type: 'system' | 'custom'
+  category: string
   enabled: boolean
   icon: string
   content?: string | null
@@ -86,10 +87,12 @@ interface AppState {
   updateMessage: (threadId: string, msgId: string, updates: Partial<Message>) => void
   toggleSkill: (id: string) => void
   loadSkills: () => Promise<void>
+  createSkill: (prompt: string) => Promise<boolean>
   loadAutomations: (userId: string) => Promise<void>
   addAutomation: (data: { userId: string; name: string; prompt: string; schedule: string; type?: string }) => Promise<void>
   toggleAutomation: (id: string) => void
   removeAutomation: (id: string) => Promise<void>
+  runNow: (id: string) => Promise<void>
   setActiveModel: (id: string) => void
   setActiveMode: (mode: AppState['activeMode']) => void
   toggleSidebar: () => void
@@ -173,12 +176,30 @@ export const useStore = create<AppState>((set, get) => ({
           name: s.name,
           description: s.description || '',
           type: s.type === 'custom' ? 'custom' : 'system',
+          category: s.category || 'other',
           enabled: s.enabled,
           icon: s.icon || 'Code2',
           content: s.content,
         })),
       })
     } catch {}
+  },
+  createSkill: async (prompt: string) => {
+    const api = (window as any).electronAPI?.db?.skill
+    const userApi = (window as any).electronAPI?.db?.user
+    if (!api || !userApi) return false
+    try {
+      const user = await userApi.findByFirebaseUid('system')
+      if (!user) return false
+      const result = await api.createFromPrompt({ userId: user.id, prompt })
+      if (result.success) {
+        await get().loadSkills()
+        return true
+      }
+      return false
+    } catch {
+      return false
+    }
   },
   loadAutomations: async (userId: string) => {
     const api = (window as any).electronAPI?.db?.automation
@@ -212,6 +233,21 @@ export const useStore = create<AppState>((set, get) => ({
     try {
       await api.delete(id)
       set((s) => ({ automations: s.automations.filter((a) => a.id !== id) }))
+    } catch {}
+  },
+  runNow: async (id) => {
+    const scheduler = (window as any).electronAPI?.scheduler
+    if (!scheduler) return
+    try {
+      await scheduler.runNow(id)
+      const userId = get().automations.find((a) => a.id === id)?.userId
+      if (userId) {
+        const api = (window as any).electronAPI?.db?.automation
+        if (api) {
+          const list = await api.list(userId)
+          set({ automations: list })
+        }
+      }
     } catch {}
   },
   setActiveModel: (id) => set({ activeModel: id }),

@@ -21,27 +21,30 @@ export default function SettingsView() {
   ]
 
   return (
-    <div className="w-full max-w-[860px] flex flex-col gap-5 px-5 py-8 pb-24 mx-auto">
-      <div className="flex justify-between items-center border-b border-codebox-border pb-4">
-        <h2 className="text-xl font-semibold text-codebox-primary">Preferences</h2>
-      </div>
+    <div className="w-full min-h-screen flex flex-col">
+      <div className="flex-1 w-full max-w-[960px] flex flex-col px-5 pt-8 pb-32 mx-auto">
+        <div className="flex items-center justify-between border-b border-codebox-border pb-3 mb-5">
+          <div className="flex items-center gap-2">
+            <h2 className="text-lg font-semibold text-codebox-primary">Preferences</h2>
+            <span className="text-xs text-codebox-secondary">{tabs.length} sections</span>
+          </div>
+        </div>
 
-      <div className="flex gap-6 min-h-[480px]">
-        <nav className="w-[180px] flex flex-col gap-1 border-r border-codebox-border pr-4">
+        <div className="flex gap-1 bg-black/15 p-[3px] rounded-[10px] border border-white/[0.03] mb-5">
           {tabs.map(({ id, icon: Icon, label }) => (
-            <div
+            <button
               key={id}
-              className={`flex items-center gap-2 px-3 py-2 rounded-md cursor-pointer text-[13px] transition-colors ${
-                tab === id ? 'bg-white/5 text-codebox-primary font-medium' : 'text-codebox-secondary hover:bg-white/5 hover:text-codebox-primary'
+              className={`flex items-center gap-2 px-4 py-1.5 rounded-lg text-[13.5px] font-medium transition-all ${
+                tab === id ? 'bg-codebox-card text-codebox-primary shadow-sm' : 'text-codebox-secondary hover:text-codebox-primary'
               }`}
               onClick={() => setTab(id)}
             >
-              <Icon size={15} /> {label}
-            </div>
+              <Icon size={14} /> {label}
+            </button>
           ))}
-        </nav>
+        </div>
 
-        <div className="flex-1 flex flex-col gap-5">
+        <div className="flex flex-col gap-5">
           {tab === 'general' && (
             <>
               <div className="bg-codebox-card border border-codebox-border rounded-xl p-4 flex flex-col gap-3.5">
