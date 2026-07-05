@@ -141,7 +141,7 @@ export default function AutomationsView() {
 
   return (
     <div className="w-full min-h-screen flex flex-col" onClick={closeAllDropdowns}>
-      <div className="flex-1 w-full max-w-[960px] flex flex-col px-5 pt-8 pb-32 mx-auto">
+      <div className="flex-1 w-full max-w-[960px] flex flex-col px-5 pt-16 pb-32 mx-auto">
         <div className="flex items-center justify-between border-b border-codebox-border pb-3 mb-5">
           <div className="flex items-center gap-2">
             <h2 className="text-lg font-semibold text-codebox-primary">Automations</h2>

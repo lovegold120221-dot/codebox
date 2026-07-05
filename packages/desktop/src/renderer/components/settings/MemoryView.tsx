@@ -1,7 +1,7 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useRef, useCallback } from 'react'
 import { getMemoryStore, Memory } from '@/lib/memory'
 import { getSkillManager } from '@/lib/skills'
-import { Brain, Search, Trash2, Sparkles, X, ChevronDown, Radio, Check } from 'lucide-react'
+import { Brain, Search, Trash2, Sparkles, X, ChevronDown, Radio, Check, Upload, FileText } from 'lucide-react'
 import { showToast } from '@/components/Toast'
 
 function hashString(str: string): number {
@@ -56,11 +56,51 @@ export default function MemoryView() {
   const [sort, setSort] = useState<'featured' | 'asc' | 'desc'>('featured')
   const [sortOpen, setSortOpen] = useState(false)
   const [selectedMem, setSelectedMem] = useState<Memory | null>(null)
+  const [uploading, setUploading] = useState(false)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     getMemoryStore().getAll().then(setMemories)
     getSkillManager().getAll().then((s) => setSkillCount(s.length))
   }, [])
+
+  const refreshMemories = useCallback(() => {
+    getMemoryStore().getAll().then(setMemories)
+  }, [])
+
+  const handleUploadFiles = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files
+    if (!files || files.length === 0) return
+    setUploading(true)
+    const mem = getMemoryStore()
+    let count = 0
+    for (const file of Array.from(files)) {
+      const isImage = file.type.startsWith('image/')
+      let content = ''
+      if (isImage) {
+        content = `[Uploaded image: ${file.name}]`
+      } else {
+        content = await new Promise<string>((resolve) => {
+          const reader = new FileReader()
+          reader.onload = () => resolve(reader.result as string)
+          reader.readAsText(file)
+        })
+      }
+      const truncated = content.length > 5000 ? content.slice(0, 5000) + '\n...[truncated]' : content
+      await mem.add({
+        type: 'convention',
+        project: 'default',
+        content: `[Knowledge Base — ${file.name}]\n${truncated}`,
+        confidence: 0.8,
+        sourceSession: 'file-upload',
+      })
+      count++
+    }
+    setUploading(false)
+    refreshMemories()
+    if (fileInputRef.current) fileInputRef.current.value = ''
+    showToast(`Saved ${count} file${count > 1 ? 's' : ''} to memory`)
+  }, [refreshMemories])
 
   const typeCounts = useMemo(() => {
     const counts: Record<string, number> = {}
@@ -100,13 +140,28 @@ export default function MemoryView() {
 
   return (
     <div className="w-full min-h-screen flex flex-col" onClick={closeAllDropdowns}>
-      <div className="flex-1 w-full max-w-[960px] flex flex-col px-5 pt-8 pb-32 mx-auto">
+      <div className="flex-1 w-full max-w-[960px] flex flex-col px-5 pt-16 pb-32 mx-auto">
         <div className="flex items-center justify-between border-b border-codebox-border pb-3 mb-5">
           <div className="flex items-center gap-2">
             <h2 className="text-lg font-semibold text-codebox-primary">Memory &amp; Profile</h2>
             <span className="text-xs text-codebox-secondary">{memories.length} memories · {skillCount} skills</span>
           </div>
           <div className="flex items-center gap-3">
+            <input
+              ref={fileInputRef}
+              type="file"
+              multiple
+              className="hidden"
+              accept=".txt,.md,.json,.csv,.xml,.yaml,.yml,.pdf,.js,.ts,.jsx,.tsx,.py,.rb,.go,.rs,.java,.c,.cpp,.h,.css,.html,.sh,image/*"
+              onChange={handleUploadFiles}
+            />
+            <button
+              className={`flex items-center gap-1.5 text-xs bg-codebox-button border border-codebox-border rounded-lg px-3 py-2 text-codebox-primary hover:bg-codebox-button-hover transition-colors ${uploading ? 'opacity-60 pointer-events-none' : ''}`}
+              onClick={() => fileInputRef.current?.click()}
+              disabled={uploading}
+            >
+              <Upload size={13} /> {uploading ? 'Uploading...' : 'Upload'}
+            </button>
             <label className="flex items-center gap-2 cursor-pointer select-none">
               <span className="text-[11px] text-codebox-secondary font-medium">Learn</span>
               <div

@@ -63,26 +63,25 @@ const CATEGORY_META: Record<string, { label: string; color: string }> = {
 const CATEGORY_ORDER = ['opencode', 'hermes', 'custom', 'other']
 
 export default function SkillsView() {
-  const { skills, toggleSkill, loadSkills, createSkill } = useStore()
+  const { skills, toggleSkill, loadSkills, createSkill, setActiveView, setComposerPrompt } = useStore()
   const [search, setSearch] = useState('')
   const [filter, setFilter] = useState<'all' | 'enabled' | 'disabled'>('all')
   const [categoryFilter, setCategoryFilter] = useState<string | null>(null)
   const [sort, setSort] = useState<'featured' | 'asc' | 'desc'>('featured')
   const [sortOpen, setSortOpen] = useState(false)
   const [selectedSkill, setSelectedSkill] = useState<typeof displayed[0] | null>(null)
-  const [creating, setCreating] = useState(false)
-  const [createPrompt, setCreatePrompt] = useState('@create_skills ')
+  const [showModal, setShowModal] = useState(false)
+  const [modalPrompt, setModalPrompt] = useState('')
   const [generating, setGenerating] = useState(false)
-  const textareaRef = useRef<HTMLTextAreaElement>(null)
+  const modalTextareaRef = useRef<HTMLTextAreaElement>(null)
 
   useEffect(() => { loadSkills() }, [loadSkills])
 
   useEffect(() => {
-    if (creating && textareaRef.current) {
-      textareaRef.current.focus()
-      textareaRef.current.setSelectionRange(14, 14)
+    if (showModal && modalTextareaRef.current) {
+      modalTextareaRef.current.focus()
     }
-  }, [creating])
+  }, [showModal])
 
   const enabledCount = skills.filter((s) => s.enabled).length
 
@@ -123,20 +122,29 @@ export default function SkillsView() {
   const closeAllDropdowns = () => { setSortOpen(false) }
 
   const handleGenerate = async () => {
-    const prompt = createPrompt.replace(/^@create_skills\s*/, '').trim()
+    const prompt = modalPrompt.trim()
     if (!prompt) return
     setGenerating(true)
     const ok = await createSkill(prompt)
     setGenerating(false)
     if (ok) {
-      setCreating(false)
-      setCreatePrompt('@create_skills ')
+      setShowModal(false)
+      setModalPrompt('')
     }
+  }
+
+  const handleSendToChat = () => {
+    const prompt = modalPrompt.trim()
+    if (!prompt) return
+    setComposerPrompt(`Create a skill: ${prompt}`)
+    setShowModal(false)
+    setModalPrompt('')
+    setActiveView('new-thread')
   }
 
   return (
     <div className="w-full min-h-screen flex flex-col" onClick={closeAllDropdowns}>
-      <div className="flex-1 w-full max-w-[960px] flex flex-col px-5 pt-8 pb-32 mx-auto">
+      <div className="flex-1 w-full max-w-[960px] flex flex-col px-5 pt-16 pb-32 mx-auto">
         <div className="flex items-center justify-between border-b border-codebox-border pb-3 mb-5">
           <div className="flex items-center gap-2">
             <h2 className="text-lg font-semibold text-codebox-primary">Skills</h2>
@@ -144,10 +152,10 @@ export default function SkillsView() {
           </div>
           <button
             className="flex items-center gap-1.5 text-xs bg-codebox-button border border-codebox-border rounded-lg px-3 py-2 text-codebox-primary hover:bg-codebox-button-hover transition-colors"
-            onClick={() => setCreating(true)}
+            onClick={() => setShowModal(true)}
           >
             <Plus size={13} />
-            <span>Create Skill</span>
+            <span>Add</span>
           </button>
         </div>
 
@@ -239,49 +247,77 @@ export default function SkillsView() {
           </div>
         </div>
 
-        {creating && (
-          <div className="bg-codebox-card border border-codebox-border/60 rounded-[14px] p-5 mb-5">
-            <div className="flex items-center gap-2 mb-3">
-              <Sparkles size={16} className="text-codebox-blue" />
-              <h3 className="text-sm font-semibold text-codebox-primary">Create New Skill</h3>
-            </div>
-            <textarea
-              ref={textareaRef}
-              className="w-full bg-codebox-input border border-codebox-border rounded-[10px] p-3 text-codebox-primary text-sm outline-none resize-none min-h-[80px] transition-all focus:border-codebox-blue/40"
-              value={createPrompt}
-              onChange={(e) => setCreatePrompt(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
-                  e.preventDefault()
-                  handleGenerate()
-                }
-              }}
-              placeholder="@create_skills what should this skill do..."
-            />
-            <p className="text-[11px] text-codebox-muted mt-1.5 mb-3">
-              Describe what you want the skill to do. The AI will generate the name, description, and instructions.
-            </p>
-            <div className="flex gap-2 justify-end">
-              <button
-                className="bg-codebox-input border border-codebox-border text-codebox-secondary px-4 py-2 rounded-lg text-xs cursor-pointer hover:text-codebox-primary transition-colors"
-                onClick={() => { setCreating(false); setCreatePrompt('@create_skills '); setGenerating(false) }}
+        {showModal && (
+          <>
+            <div
+              className="fixed inset-0 bg-black/60 z-40 flex items-center justify-center"
+              onClick={() => setShowModal(false)}
+            >
+              <div
+                className="w-full max-w-[520px] bg-codebox-sidebar border border-codebox-border rounded-[16px] p-6 shadow-2xl"
+                style={{ animation: 'modalIn 0.2s ease-out' }}
+                onClick={(e) => e.stopPropagation()}
               >
-                Cancel
-              </button>
-              <button
-                className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-semibold transition-colors cursor-pointer ${
-                  generating
-                    ? 'bg-codebox-blue/20 text-codebox-blue cursor-not-allowed'
-                    : 'bg-codebox-blue text-white hover:bg-blue-600'
-                }`}
-                onClick={handleGenerate}
-                disabled={generating || !createPrompt.replace(/^@create_skills\s*/, '').trim()}
-              >
-                {generating ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />}
-                {generating ? 'Generating...' : 'Generate Skill'}
-              </button>
+                <style>{`@keyframes modalIn { from { opacity: 0; transform: scale(0.96) } to { opacity: 1; transform: scale(1) } }`}</style>
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-2">
+                    <Sparkles size={18} className="text-codebox-blue" />
+                    <h3 className="text-base font-semibold text-codebox-primary">Add New Skill</h3>
+                  </div>
+                  <button
+                    className="text-codebox-secondary hover:text-codebox-primary p-1 rounded-md hover:bg-white/5 transition-colors"
+                    onClick={() => setShowModal(false)}
+                  >
+                    <X size={18} />
+                  </button>
+                </div>
+                <p className="text-[12px] text-codebox-muted mb-3">
+                  Describe what the skill should do. The AI will generate the name, description, and instructions — or send it to chat for a guided creation.
+                </p>
+                <textarea
+                  ref={modalTextareaRef}
+                  className="w-full bg-codebox-input border border-codebox-border rounded-[10px] p-3 text-codebox-primary text-sm outline-none resize-none min-h-[100px] transition-all focus:border-codebox-blue/40"
+                  placeholder="e.g. A skill that helps with code review by analyzing diffs and suggesting improvements..."
+                  value={modalPrompt}
+                  onChange={(e) => setModalPrompt(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
+                      e.preventDefault()
+                      handleGenerate()
+                    }
+                  }}
+                />
+                <div className="flex gap-2 justify-end mt-4">
+                  <button
+                    className="bg-codebox-input border border-codebox-border text-codebox-secondary px-4 py-2 rounded-lg text-xs cursor-pointer hover:text-codebox-primary transition-colors"
+                    onClick={() => { setShowModal(false); setModalPrompt('') }}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-semibold bg-codebox-button border border-codebox-border text-codebox-primary hover:bg-codebox-button-hover transition-colors cursor-pointer"
+                    onClick={handleSendToChat}
+                    disabled={!modalPrompt.trim()}
+                  >
+                    <Plus size={14} />
+                    Send to Chat
+                  </button>
+                  <button
+                    className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-semibold transition-colors cursor-pointer ${
+                      generating
+                        ? 'bg-codebox-blue/20 text-codebox-blue cursor-not-allowed'
+                        : 'bg-codebox-blue text-white hover:bg-blue-600'
+                    }`}
+                    onClick={handleGenerate}
+                    disabled={generating || !modalPrompt.trim()}
+                  >
+                    {generating ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />}
+                    {generating ? 'Generating...' : 'Generate Skill'}
+                  </button>
+                </div>
+              </div>
             </div>
-          </div>
+          </>
         )}
 
         <div className="grid grid-cols-2 gap-3.5 overflow-y-auto pb-5" style={{ alignContent: 'start' }}>

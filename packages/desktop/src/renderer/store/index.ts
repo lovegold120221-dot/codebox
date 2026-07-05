@@ -107,6 +107,8 @@ interface AppState {
   setOllamaConnected: (v: boolean) => void
   refreshProviders: () => Promise<void>
   sendPrompt: (threadId: string, text: string) => Promise<void>
+  composerPrompt: string
+  setComposerPrompt: (text: string) => void
 }
 
 export const useStore = create<AppState>((set, get) => ({
@@ -136,6 +138,7 @@ export const useStore = create<AppState>((set, get) => ({
   ollamaConnected: false,
   availableProviders: [],
   providerLoading: false,
+  composerPrompt: '',
 
   setActiveView: (view) => set({ activeView: view }),
   setActiveThread: (id) => set({ activeThreadId: id }),
@@ -384,4 +387,6 @@ export const useStore = create<AppState>((set, get) => ({
       set({ isStreaming: false })
     }
   },
+
+  setComposerPrompt: (text: string) => set({ composerPrompt: text }),
 }))

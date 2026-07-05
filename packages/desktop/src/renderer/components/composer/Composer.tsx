@@ -23,10 +23,22 @@ export default function Composer() {
   const {
     activeMode, setActiveMode, addThread, addMessage, activeThreadId,
     setActiveView, setActiveThread, activeView, isStreaming, sendPrompt,
-    toggleTerminal, isTerminalOpen,
+    toggleTerminal, isTerminalOpen, composerPrompt, setComposerPrompt,
   } = useStore()
 
   const hasText = text.trim().length > 0
+
+  useEffect(() => {
+    if (composerPrompt) {
+      setText(composerPrompt)
+      setComposerPrompt('')
+      if (textareaRef.current) {
+        textareaRef.current.focus()
+        textareaRef.current.style.height = 'auto'
+        textareaRef.current.style.height = Math.min(textareaRef.current.scrollHeight, 150) + 'px'
+      }
+    }
+  }, [composerPrompt, setComposerPrompt])
 
   const toggleMic = useCallback(() => {
     if (isListening) {
