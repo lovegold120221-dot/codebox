@@ -1,6 +1,6 @@
 import { useStore } from '@/store'
 import {
-  Edit3, Clock, Layers, Folder, Settings, Share2, Copy, Volume2, LogOut, Brain,
+  Edit3, Clock, Layers, Folder, Settings, Share2, Copy, AudioWaveform, LogOut, Brain,
 } from 'lucide-react'
 
 export default function Sidebar() {
@@ -108,7 +108,7 @@ export default function Sidebar() {
           title="Voice Agent Orb (Draggable)"
           onClick={toggleOrb}
         >
-          <Volume2 size={17} />
+          <AudioWaveform size={17} />
         </button>
 
         <button
