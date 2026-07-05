@@ -46,19 +46,32 @@ export default function Composer() {
 
   const startRecording = useCallback(async () => {
     try {
+      if (!navigator.mediaDevices?.getUserMedia) {
+        console.error('mediaDevices.getUserMedia not available')
+        alert('Microphone access not available in this context')
+        return
+      }
+      console.log('Requesting microphone access...')
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+      console.log('Microphone access granted, starting recorder')
       streamRef.current = stream
       audioChunksRef.current = []
       baseTextRef.current = text
 
       const recorder = new MediaRecorder(stream)
       recorder.ondataavailable = (e) => {
-        if (e.data.size > 0) audioChunksRef.current.push(e.data)
+        if (e.data.size > 0) {
+          audioChunksRef.current.push(e.data)
+          console.log(`Audio chunk received: ${e.data.size} bytes`)
+        }
       }
       recorder.onstop = async () => {
         // Stop all audio tracks
         streamRef.current?.getTracks().forEach((t) => t.stop())
         streamRef.current = null
+
+        const totalSize = audioChunksRef.current.reduce((sum, c) => sum + c.size, 0)
+        console.log(`Recording stopped, ${audioChunksRef.current.length} chunks, ${totalSize} bytes total`)
 
         if (audioChunksRef.current.length === 0) {
           setIsListening(false)
@@ -68,23 +81,31 @@ export default function Composer() {
         setIsTranscribing(true)
         const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' })
         const arrayBuffer = await audioBlob.arrayBuffer()
+        console.log(`Sending ${arrayBuffer.byteLength} bytes to whisper`)
 
         const api = (window as any).electronAPI
-        if (api?.transcribeAudio) {
-          try {
-            const result = await api.transcribeAudio(arrayBuffer)
-            if (result.success && result.transcript) {
-              const base = baseTextRef.current
-              const combined = base ? base + ' ' + result.transcript.trim() : result.transcript.trim()
-              setText(combined)
-              if (textareaRef.current) {
-                textareaRef.current.style.height = 'auto'
-                textareaRef.current.style.height = Math.min(textareaRef.current.scrollHeight, 150) + 'px'
-              }
+        if (!api?.transcribeAudio) {
+          console.error('transcribeAudio IPC not available')
+          setIsTranscribing(false)
+          setIsListening(false)
+          return
+        }
+        try {
+          const result = await api.transcribeAudio(arrayBuffer)
+          console.log('Whisper result:', result)
+          if (result.success && result.transcript) {
+            const base = baseTextRef.current
+            const combined = base ? base + ' ' + result.transcript.trim() : result.transcript.trim()
+            setText(combined)
+            if (textareaRef.current) {
+              textareaRef.current.style.height = 'auto'
+              textareaRef.current.style.height = Math.min(textareaRef.current.scrollHeight, 150) + 'px'
             }
-          } catch (err) {
-            console.warn('Transcription failed:', err)
+          } else {
+            console.warn('Transcription failed:', result.error)
           }
+        } catch (err) {
+          console.error('Transcription IPC error:', err)
         }
         setIsTranscribing(false)
         setIsListening(false)
@@ -93,8 +114,10 @@ export default function Composer() {
       recorder.start()
       mediaRecorderRef.current = recorder
       setIsListening(true)
-    } catch (err) {
-      console.warn('Microphone access failed:', err)
+      console.log('MediaRecorder started')
+    } catch (err: any) {
+      console.error('Microphone access failed:', err.name, err.message)
+      alert(`Microphone error: ${err.message}`)
       setIsListening(false)
     }
   }, [text])

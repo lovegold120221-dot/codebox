@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain, dialog, protocol, session, shell } from 'electron'
+import { app, BrowserWindow, ipcMain, dialog, protocol, session } from 'electron'
 import path from 'path'
 import fs from 'fs'
 import os from 'os'
@@ -136,14 +136,17 @@ ipcMain.handle('app:getVersion', () => app.getVersion())
 
 ipcMain.handle('audio:transcribe', async (_e, audioBuffer: ArrayBuffer) => {
   const tmpDir = os.tmpdir()
-  const tmpFile = path.join(tmpDir, `codebox-audio-${Date.now()}.wav`)
-  const outFile = path.join(tmpDir, `codebox-audio-${Date.now()}.txt`)
+  const timestamp = Date.now()
+  const audioFileBase = `codebox-audio-${timestamp}`
+  const tmpFile = path.join(tmpDir, `${audioFileBase}.webm`)
+  // Whisper names output as <inputBase>.txt in the output_dir
+  const outFile = path.join(tmpDir, `${audioFileBase}.txt`)
 
   try {
     fs.writeFileSync(tmpFile, Buffer.from(audioBuffer))
 
     const whisperBin = path.join(os.homedir(), '.local', 'bin', 'whisper')
-    await execFileAsync(whisperBin, [
+    const { stdout, stderr } = await execFileAsync(whisperBin, [
       tmpFile,
       '--model', 'tiny',
       '--language', 'en',
@@ -151,11 +154,27 @@ ipcMain.handle('audio:transcribe', async (_e, audioBuffer: ArrayBuffer) => {
       '--output_dir', tmpDir,
       '--verbose', 'False',
     ], {
-      timeout: 30000,
+      timeout: 60000,
       env: { ...process.env },
     })
 
-    const transcript = fs.readFileSync(outFile, 'utf-8').trim()
+    SafeLogger.internal('info', `Whisper stdout: ${stdout}`, stderr ? `stderr: ${stderr}` : '')
+
+    let transcript = ''
+    try {
+      transcript = fs.readFileSync(outFile, 'utf-8').trim()
+    } catch {
+      // Whisper sometimes outputs to a different name, try to find it
+      const files = fs.readdirSync(tmpDir).filter((f) => f.startsWith(audioFileBase) && f.endsWith('.txt'))
+      if (files.length > 0) {
+        transcript = fs.readFileSync(path.join(tmpDir, files[0]), 'utf-8').trim()
+      }
+    }
+
+    if (!transcript) {
+      return { success: false, error: 'No transcript produced' }
+    }
+
     return { success: true, transcript }
   } catch (err: any) {
     SafeLogger.internal('error', 'Whisper transcription failed', err.message)
