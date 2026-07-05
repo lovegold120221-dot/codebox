@@ -72,6 +72,56 @@ ipcMain.handle('dialog:openFile', async () => {
   return result.canceled ? null : result.filePaths[0]
 })
 
+ipcMain.handle('dialog:openFiles', async () => {
+  const result = await dialog.showOpenDialog(mainWindow!, {
+    properties: ['openFile', 'multiSelections'],
+    filters: [
+      { name: 'All Files', extensions: ['*'] },
+      { name: 'Images', extensions: ['png', 'jpg', 'jpeg', 'gif', 'webp', 'svg', 'bmp'] },
+      { name: 'Documents', extensions: ['txt', 'md', 'json', 'csv', 'xml', 'yaml', 'yml', 'pdf'] },
+      { name: 'Code', extensions: ['js', 'ts', 'jsx', 'tsx', 'py', 'rb', 'go', 'rs', 'java', 'c', 'cpp', 'h', 'css', 'html', 'sh'] },
+    ],
+  })
+  return result.canceled ? null : result.filePaths
+})
+
+ipcMain.handle('file:read', async (_e, filePath: string) => {
+  try {
+    const stat = fs.statSync(filePath)
+    const ext = path.extname(filePath).toLowerCase()
+    const isImage = ['.png', '.jpg', '.jpeg', '.gif', '.webp', '.svg', '.bmp'].includes(ext)
+
+    if (isImage) {
+      const buffer = fs.readFileSync(filePath)
+      const base64 = buffer.toString('base64')
+      const mimeType = ext === '.png' ? 'image/png'
+        : ext === '.jpg' || ext === '.jpeg' ? 'image/jpeg'
+        : ext === '.gif' ? 'image/gif'
+        : ext === '.webp' ? 'image/webp'
+        : ext === '.svg' ? 'image/svg+xml'
+        : 'image/bmp'
+      return {
+        path: filePath,
+        name: path.basename(filePath),
+        size: stat.size,
+        isImage: true,
+        dataUrl: `data:${mimeType};base64,${base64}`,
+      }
+    }
+
+    const content = fs.readFileSync(filePath, 'utf-8')
+    return {
+      path: filePath,
+      name: path.basename(filePath),
+      size: stat.size,
+      isImage: false,
+      content,
+    }
+  } catch (err: any) {
+    return { error: err.message }
+  }
+})
+
 ipcMain.handle('app:getVersion', () => app.getVersion())
 
 const orchestrator = getOrchestrator()

@@ -67,6 +67,8 @@ const google = {
 contextBridge.exposeInMainWorld('electronAPI', {
   openDirectory: () => ipcRenderer.invoke('dialog:openDirectory'),
   openFile: () => ipcRenderer.invoke('dialog:openFile'),
+  openFiles: (): Promise<string[] | null> => ipcRenderer.invoke('dialog:openFiles'),
+  readFile: (filePath: string): Promise<any> => ipcRenderer.invoke('file:read', filePath),
   getVersion: () => ipcRenderer.invoke('app:getVersion'),
 
   google,
