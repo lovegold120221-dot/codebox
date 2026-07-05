@@ -1,6 +1,6 @@
 import { useState, useRef, useCallback, useEffect } from 'react'
 import { useStore } from '@/store'
-import { Plus, ArrowUp, GitBranch, Terminal, Loader2, Mic, Folder, X, FileText, ImageIcon } from 'lucide-react'
+import { Plus, ArrowUp, GitBranch, Terminal, Loader2, Mic, Folder, X, FileText, ImageIcon, AudioLines } from 'lucide-react'
 
 const MODE_TABS = ['local', 'worktree', 'cloud'] as const
 
@@ -16,10 +16,12 @@ interface Attachment {
 export default function Composer() {
   const [text, setText] = useState('')
   const [isListening, setIsListening] = useState(false)
+  const [isTranscribing, setIsTranscribing] = useState(false)
   const [attachments, setAttachments] = useState<Attachment[]>([])
   const [workDir, setWorkDir] = useState<string | null>(null)
-  const [interimText, setInterimText] = useState('')
-  const recognitionRef = useRef<any>(null)
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null)
+  const audioChunksRef = useRef<Blob[]>([])
+  const streamRef = useRef<MediaStream | null>(null)
   const baseTextRef = useRef('')
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const {
@@ -42,58 +44,79 @@ export default function Composer() {
     }
   }, [composerPrompt, setComposerPrompt])
 
+  const startRecording = useCallback(async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+      streamRef.current = stream
+      audioChunksRef.current = []
+      baseTextRef.current = text
+
+      const recorder = new MediaRecorder(stream)
+      recorder.ondataavailable = (e) => {
+        if (e.data.size > 0) audioChunksRef.current.push(e.data)
+      }
+      recorder.onstop = async () => {
+        // Stop all audio tracks
+        streamRef.current?.getTracks().forEach((t) => t.stop())
+        streamRef.current = null
+
+        if (audioChunksRef.current.length === 0) {
+          setIsListening(false)
+          return
+        }
+
+        setIsTranscribing(true)
+        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' })
+        const arrayBuffer = await audioBlob.arrayBuffer()
+
+        const api = (window as any).electronAPI
+        if (api?.transcribeAudio) {
+          try {
+            const result = await api.transcribeAudio(arrayBuffer)
+            if (result.success && result.transcript) {
+              const base = baseTextRef.current
+              const combined = base ? base + ' ' + result.transcript.trim() : result.transcript.trim()
+              setText(combined)
+              if (textareaRef.current) {
+                textareaRef.current.style.height = 'auto'
+                textareaRef.current.style.height = Math.min(textareaRef.current.scrollHeight, 150) + 'px'
+              }
+            }
+          } catch (err) {
+            console.warn('Transcription failed:', err)
+          }
+        }
+        setIsTranscribing(false)
+        setIsListening(false)
+      }
+
+      recorder.start()
+      mediaRecorderRef.current = recorder
+      setIsListening(true)
+    } catch (err) {
+      console.warn('Microphone access failed:', err)
+      setIsListening(false)
+    }
+  }, [text])
+
+  const stopRecording = useCallback(() => {
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+      mediaRecorderRef.current.stop()
+    }
+  }, [])
+
   const toggleMic = useCallback(() => {
     if (isListening) {
-      recognitionRef.current?.stop()
-      setIsListening(false)
-      setInterimText('')
-      return
+      stopRecording()
+    } else {
+      startRecording()
     }
-    const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition
-    if (!SR) {
-      console.warn('Speech Recognition API not available')
-      return
-    }
-    baseTextRef.current = text
-    const recognition = new SR()
-    recognition.lang = 'en-US'
-    recognition.interimResults = true
-    recognition.continuous = true
-    recognition.onresult = (event: any) => {
-      let finalText = ''
-      let interim = ''
-      for (let i = 0; i < event.results.length; i++) {
-        const result = event.results[i]
-        if (result.isFinal) {
-          finalText += result[0].transcript
-        } else {
-          interim += result[0].transcript
-        }
-      }
-      const base = baseTextRef.current
-      if (finalText) {
-        const combined = base ? base + ' ' + finalText.trim() : finalText.trim()
-        setText(combined)
-        baseTextRef.current = combined
-      }
-      setInterimText(interim)
-    }
-    recognition.onend = () => {
-      setIsListening(false)
-      setInterimText('')
-    }
-    recognition.onerror = (e: any) => {
-      console.warn('Speech recognition error:', e.error)
-      setIsListening(false)
-      setInterimText('')
-    }
-    recognitionRef.current = recognition
-    recognition.start()
-    setIsListening(true)
-  }, [isListening, text])
+  }, [isListening, startRecording, stopRecording])
 
   useEffect(() => {
-    return () => recognitionRef.current?.stop()
+    return () => {
+      streamRef.current?.getTracks().forEach((t) => t.stop())
+    }
   }, [])
 
   const pickFolder = useCallback(async () => {
@@ -304,23 +327,33 @@ export default function Composer() {
           ref={textareaRef}
           className="w-full bg-transparent border-none outline-none px-3.5 py-3 text-sm text-codebox-primary placeholder:text-codebox-muted resize-none"
           style={{ minHeight: 40 }}
-          placeholder={isStreaming ? 'Waiting for response...' : isListening ? 'Listening... speak now' : 'Ask anything or click mic for voice input...'}
+          placeholder={isStreaming ? 'Waiting for response...' : isListening ? 'Recording... tap stop when done' : isTranscribing ? 'Transcribing audio...' : 'Ask anything or click mic for voice input...'}
           rows={1}
-          value={isListening && interimText ? text + ' ' + interimText : text}
+          value={text}
           onChange={handleInput}
           onKeyDown={handleKeyDown}
-          disabled={isStreaming}
+          disabled={isStreaming || isTranscribing}
         />
-        {isListening && (
+        {(isListening || isTranscribing) && (
           <div className="flex items-center gap-2 px-3.5 pb-1.5">
-            <span className="flex gap-0.5 items-end h-3">
-              <span className="w-0.5 h-2 bg-codebox-red rounded-full animate-pulse" style={{ animationDelay: '0ms' }} />
-              <span className="w-0.5 h-3 bg-codebox-red rounded-full animate-pulse" style={{ animationDelay: '100ms' }} />
-              <span className="w-0.5 h-1.5 bg-codebox-red rounded-full animate-pulse" style={{ animationDelay: '200ms' }} />
-              <span className="w-0.5 h-2.5 bg-codebox-red rounded-full animate-pulse" style={{ animationDelay: '300ms' }} />
-            </span>
-            <span className="text-[11px] text-codebox-red font-medium">Recording</span>
-            <span className="text-[11px] text-codebox-muted">— tap stop when done, then edit or send</span>
+            {isListening && (
+              <>
+                <span className="flex gap-0.5 items-end h-3">
+                  <span className="w-0.5 h-2 bg-codebox-red rounded-full animate-pulse" style={{ animationDelay: '0ms' }} />
+                  <span className="w-0.5 h-3 bg-codebox-red rounded-full animate-pulse" style={{ animationDelay: '100ms' }} />
+                  <span className="w-0.5 h-1.5 bg-codebox-red rounded-full animate-pulse" style={{ animationDelay: '200ms' }} />
+                  <span className="w-0.5 h-2.5 bg-codebox-red rounded-full animate-pulse" style={{ animationDelay: '300ms' }} />
+                </span>
+                <span className="text-[11px] text-codebox-red font-medium">Recording</span>
+                <span className="text-[11px] text-codebox-muted">— tap stop when done, then edit or send</span>
+              </>
+            )}
+            {isTranscribing && (
+              <>
+                <Loader2 size={12} className="text-codebox-blue animate-spin" />
+                <span className="text-[11px] text-codebox-blue font-medium">Transcribing with Whisper...</span>
+              </>
+            )}
           </div>
         )}
         <div className="flex items-center justify-between px-3.5 pb-3 pt-1">
@@ -347,12 +380,19 @@ export default function Composer() {
               <Folder size={18} />
             </button>
             <button
-              className={`bg-transparent border-none cursor-pointer p-[6px] rounded-md transition-all ${isListening ? 'text-codebox-red bg-codebox-red/10' : 'text-codebox-secondary hover:text-codebox-primary hover:bg-white/5'}`}
-              title={isListening ? 'Stop recording' : 'Voice input (speech to text)'}
+              className={`bg-transparent border-none cursor-pointer p-[6px] rounded-md transition-all ${
+                isListening ? 'text-codebox-red bg-codebox-red/10'
+                : isTranscribing ? 'text-codebox-blue'
+                : 'text-codebox-secondary hover:text-codebox-primary hover:bg-white/5'
+              }`}
+              title={isListening ? 'Stop recording' : isTranscribing ? 'Transcribing...' : 'Voice input (record + transcribe)'}
               onClick={toggleMic}
+              disabled={isTranscribing}
             >
               {isListening ? (
                 <span className="w-3.5 h-3.5 rounded-full bg-codebox-red inline-block animate-pulse" />
+              ) : isTranscribing ? (
+                <Loader2 size={18} className="animate-spin" />
               ) : (
                 <Mic size={18} />
               )}

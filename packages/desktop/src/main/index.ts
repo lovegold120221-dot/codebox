@@ -1,7 +1,9 @@
-import { app, BrowserWindow, ipcMain, dialog, protocol } from 'electron'
+import { app, BrowserWindow, ipcMain, dialog, protocol, session, shell } from 'electron'
 import path from 'path'
 import fs from 'fs'
 import os from 'os'
+import { execFile } from 'child_process'
+import { promisify } from 'util'
 import { getOrchestrator } from './providers/orchestrator'
 import { SafeLogger } from './providers/logger'
 import { getAllAliases, getProviderConfig } from './providers/config'
@@ -9,6 +11,8 @@ import { getDb, disconnectDb } from './db'
 import { GoogleService } from './services'
 import { startScheduler, stopScheduler } from './scheduler'
 import cp from 'cron-parser'
+
+const execFileAsync = promisify(execFile)
 
 let mainWindow: BrowserWindow | null = null
 
@@ -44,6 +48,12 @@ app.whenReady().then(() => {
     const url = request.url.substring('codebox://'.length)
     callback({ path: path.normalize(decodeURIComponent(url)) })
   })
+
+  // Grant microphone permission automatically
+  session.defaultSession.setPermissionRequestHandler((_webContents, permission, callback) => {
+    callback(permission === 'media')
+  })
+
   createWindow()
   startScheduler()
 })
@@ -123,6 +133,38 @@ ipcMain.handle('file:read', async (_e, filePath: string) => {
 })
 
 ipcMain.handle('app:getVersion', () => app.getVersion())
+
+ipcMain.handle('audio:transcribe', async (_e, audioBuffer: ArrayBuffer) => {
+  const tmpDir = os.tmpdir()
+  const tmpFile = path.join(tmpDir, `codebox-audio-${Date.now()}.wav`)
+  const outFile = path.join(tmpDir, `codebox-audio-${Date.now()}.txt`)
+
+  try {
+    fs.writeFileSync(tmpFile, Buffer.from(audioBuffer))
+
+    const whisperBin = path.join(os.homedir(), '.local', 'bin', 'whisper')
+    await execFileAsync(whisperBin, [
+      tmpFile,
+      '--model', 'tiny',
+      '--language', 'en',
+      '--output_format', 'txt',
+      '--output_dir', tmpDir,
+      '--verbose', 'False',
+    ], {
+      timeout: 30000,
+      env: { ...process.env },
+    })
+
+    const transcript = fs.readFileSync(outFile, 'utf-8').trim()
+    return { success: true, transcript }
+  } catch (err: any) {
+    SafeLogger.internal('error', 'Whisper transcription failed', err.message)
+    return { success: false, error: err.message }
+  } finally {
+    try { fs.unlinkSync(tmpFile) } catch {}
+    try { fs.unlinkSync(outFile) } catch {}
+  }
+})
 
 const orchestrator = getOrchestrator()
 

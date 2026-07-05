@@ -70,6 +70,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
   openFiles: (): Promise<string[] | null> => ipcRenderer.invoke('dialog:openFiles'),
   readFile: (filePath: string): Promise<any> => ipcRenderer.invoke('file:read', filePath),
   getVersion: () => ipcRenderer.invoke('app:getVersion'),
+  transcribeAudio: (audioBuffer: ArrayBuffer): Promise<{ success: boolean; transcript?: string; error?: string }> =>
+    ipcRenderer.invoke('audio:transcribe', audioBuffer),
 
   google,
 
