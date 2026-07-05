@@ -10,8 +10,6 @@ export default function VoiceOrb() {
   const orbStartPosRef = useRef({ x: 0, y: 0 })
   const hasDraggedRef = useRef(false)
 
-  const tooltipText = isOrbConnected ? 'Listening... (Connected to Codebox WS)' : 'Voice Agent: Idle (Click to connect)'
-
   const onPointerDown = useCallback((e: React.PointerEvent) => {
     isDraggingRef.current = true
     hasDraggedRef.current = false
@@ -71,19 +69,6 @@ export default function VoiceOrb() {
       onPointerMove={onPointerMove}
       onPointerUp={onPointerUp}
     >
-      {/* Tooltip */}
-      <div
-        className="absolute -top-9 whitespace-nowrap rounded-full text-[11px] font-medium pointer-events-none transition-opacity"
-        style={{
-          background: theme === 'dark' ? 'rgba(17, 17, 19, 0.9)' : 'rgba(255, 255, 255, 0.95)',
-          border: `1px solid ${theme === 'dark' ? '#27272b' : '#e1e1e6'}`,
-          padding: '4px 10px',
-          color: theme === 'dark' ? '#f4f4f6' : '#18181b',
-        }}
-      >
-        {tooltipText}
-      </div>
-
       {/* Outer orb with rotation animation */}
       <div
         className="voice-orb-outer voice-orb-show"
