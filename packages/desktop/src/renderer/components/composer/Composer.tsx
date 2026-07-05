@@ -1,11 +1,13 @@
-import { useState, useRef, useCallback } from 'react'
+import { useState, useRef, useCallback, useEffect } from 'react'
 import { useStore } from '@/store'
-import { Plus, ArrowUp, GitBranch, Terminal, Loader2 } from 'lucide-react'
+import { Plus, ArrowUp, GitBranch, Terminal, Loader2, Mic, Square } from 'lucide-react'
 
 const MODE_TABS = ['local', 'worktree', 'cloud'] as const
 
 export default function Composer() {
   const [text, setText] = useState('')
+  const [isListening, setIsListening] = useState(false)
+  const recognitionRef = useRef<any>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const {
     activeMode, setActiveMode, addThread, addMessage, activeThreadId,
@@ -14,6 +16,36 @@ export default function Composer() {
   } = useStore()
 
   const hasText = text.trim().length > 0
+
+  const toggleMic = useCallback(() => {
+    if (isListening) {
+      recognitionRef.current?.stop()
+      setIsListening(false)
+      return
+    }
+    const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition
+    if (!SR) return
+    const recognition = new SR()
+    recognition.lang = 'en-US'
+    recognition.interimResults = true
+    recognition.continuous = true
+    recognition.onresult = (event: any) => {
+      let transcript = ''
+      for (let i = 0; i < event.results.length; i++) {
+        transcript += event.results[i][0].transcript
+      }
+      setText(transcript)
+    }
+    recognition.onend = () => setIsListening(false)
+    recognition.onerror = () => setIsListening(false)
+    recognitionRef.current = recognition
+    recognition.start()
+    setIsListening(true)
+  }, [isListening])
+
+  useEffect(() => {
+    return () => recognitionRef.current?.stop()
+  }, [])
 
   const handleInput = useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setText(e.target.value)
@@ -97,6 +129,13 @@ export default function Composer() {
               onClick={() => toggleTerminal()}
             >
               <Terminal size={18} />
+            </button>
+            <button
+              className={`bg-transparent border-none cursor-pointer p-[6px] rounded-md hover:bg-white/5 transition-all ${isListening ? 'text-codebox-red bg-codebox-red/10 animate-pulse' : 'text-codebox-secondary hover:text-codebox-primary'}`}
+              title={isListening ? 'Stop voice input' : 'Voice input'}
+              onClick={toggleMic}
+            >
+              {isListening ? <Square size={16} /> : <Mic size={18} />}
             </button>
           </div>
 
