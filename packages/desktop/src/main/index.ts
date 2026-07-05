@@ -281,6 +281,13 @@ ipcMain.handle('db:skill:seedFromOpenCode', async () => {
   // Second pass: seed/dedupe with category assignment
   const seenFinal = new Set<string>()
 
+  // Build lookup of existing DB skills by normalized name
+  const existingSkills = await db.skill.findMany({ where: { type: 'system' } })
+  const existingByNorm = new Map<string, typeof existingSkills[0]>()
+  for (const s of existingSkills) {
+    existingByNorm.set(normalizeName(s.name), s)
+  }
+
   for (const entry of skills) {
     const content = fs.readFileSync(entry.path, 'utf-8')
     const nameMatch = content.match(/^name:\s*(.+)$/m)
@@ -298,7 +305,7 @@ ipcMain.handle('db:skill:seedFromOpenCode', async () => {
       category = 'other'
     }
 
-    // Skip duplicates (normalized name already seen)
+    // Skip duplicates (normalized name already seen in this run)
     if (seenFinal.has(normalized)) continue
     seenFinal.add(normalized)
 
@@ -313,9 +320,9 @@ ipcMain.handle('db:skill:seedFromOpenCode', async () => {
         : `${secondSentence} It configures the agent with the right context, commands, and best practices for this domain.`
     }
 
-    const existing = await db.skill.findFirst({ where: { name } })
+    const existing = existingByNorm.get(normalized)
     if (!existing) {
-      await db.skill.create({
+      const created = await db.skill.create({
         data: {
           userId: systemUser.id,
           name,
@@ -327,12 +334,16 @@ ipcMain.handle('db:skill:seedFromOpenCode', async () => {
           content,
         },
       })
+      existingByNorm.set(normalized, created)
       seeded.push(name)
-    } else if (existing.category !== category || existing.description !== description) {
+    } else if (existing.category !== category || existing.description !== description || existing.name !== name) {
       await db.skill.update({
         where: { id: existing.id },
-        data: { description, category },
+        data: { name, description, category },
       })
+      existing.name = name
+      existing.description = description
+      existing.category = category
       updatedNames.push(name)
     }
   }
