@@ -65,27 +65,81 @@ export default function Composer() {
     if (dir) setWorkDir(dir)
   }, [])
 
+  const fileInputRef = useRef<HTMLInputElement>(null)
+
   const pickFiles = useCallback(async () => {
     const api = (window as any).electronAPI
-    if (!api?.openFiles || !api?.readFile) return
-    const filePaths = await api.openFiles()
-    if (!filePaths || filePaths.length === 0) return
+
+    // Electron path: native file dialog + IPC file read
+    if (api?.openFiles && api?.readFile) {
+      try {
+        const filePaths = await api.openFiles()
+        if (!filePaths || filePaths.length === 0) return
+
+        const results: Attachment[] = []
+        for (const fp of filePaths) {
+          const file = await api.readFile(fp)
+          if (file && !file.error) {
+            results.push({
+              path: file.path,
+              name: file.name,
+              size: file.size,
+              isImage: file.isImage,
+              dataUrl: file.dataUrl,
+              content: file.content,
+            })
+          }
+        }
+        setAttachments((prev) => [...prev, ...results])
+        return
+      } catch {
+        // fall through to browser fallback
+      }
+    }
+
+    // Browser/renderer fallback: hidden <input type="file">
+    fileInputRef.current?.click()
+  }, [])
+
+  const handleFileInputChange = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files
+    if (!files || files.length === 0) return
 
     const results: Attachment[] = []
-    for (const fp of filePaths) {
-      const file = await api.readFile(fp)
-      if (file && !file.error) {
+    for (const file of Array.from(files)) {
+      const isImage = file.type.startsWith('image/')
+      if (isImage) {
+        const dataUrl = await new Promise<string>((resolve) => {
+          const reader = new FileReader()
+          reader.onload = () => resolve(reader.result as string)
+          reader.readAsDataURL(file)
+        })
         results.push({
-          path: file.path,
+          path: file.name,
           name: file.name,
           size: file.size,
-          isImage: file.isImage,
-          dataUrl: file.dataUrl,
-          content: file.content,
+          isImage: true,
+          dataUrl,
+        })
+      } else {
+        const content = await new Promise<string>((resolve) => {
+          const reader = new FileReader()
+          reader.onload = () => resolve(reader.result as string)
+          reader.readAsText(file)
+        })
+        results.push({
+          path: file.name,
+          name: file.name,
+          size: file.size,
+          isImage: false,
+          content,
         })
       }
     }
+
     setAttachments((prev) => [...prev, ...results])
+    // Reset so the same file can be selected again
+    if (fileInputRef.current) fileInputRef.current.value = ''
   }, [])
 
   const removeAttachment = useCallback((index: number) => {
@@ -283,6 +337,16 @@ export default function Composer() {
           <span>eb/codebox-main</span>
         </div>
       </div>
+
+      {/* Hidden file input for browser/renderer fallback */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        multiple
+        className="hidden"
+        accept="image/*,.txt,.md,.json,.csv,.xml,.yaml,.yml,.pdf,.js,.ts,.jsx,.tsx,.py,.rb,.go,.rs,.java,.c,.cpp,.h,.css,.html,.sh"
+        onChange={handleFileInputChange}
+      />
     </footer>
   )
 }
