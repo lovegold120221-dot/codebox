@@ -104,7 +104,7 @@ export default function Sidebar() {
         </button>
 
         <button
-          className={`bg-transparent border-none cursor-pointer p-[6px] rounded-md flex items-center justify-center transition-all ${isOrbVisible ? 'text-codebox-purple bg-codebox-purple/15 shadow-[0_0_10px_rgba(139,92,246,0.3)]' : ''}`}
+          className={`bg-transparent border-none text-codebox-secondary cursor-pointer p-[6px] rounded-md flex items-center justify-center transition-all ${isOrbVisible ? 'text-codebox-purple bg-codebox-purple/15 shadow-[0_0_10px_rgba(139,92,246,0.3)]' : 'hover:text-codebox-primary hover:bg-white/5'}`}
           title="Voice Agent Orb (Draggable)"
           onClick={toggleOrb}
         >
