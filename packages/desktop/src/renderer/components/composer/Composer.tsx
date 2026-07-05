@@ -1,6 +1,6 @@
 import { useState, useRef, useCallback, useEffect } from 'react'
 import { useStore } from '@/store'
-import { Plus, ArrowUp, GitBranch, Terminal, Loader2, Mic, Square, Folder, X, FileText, ImageIcon } from 'lucide-react'
+import { Plus, ArrowUp, GitBranch, Terminal, Loader2, Mic, Folder, X, FileText, ImageIcon } from 'lucide-react'
 
 const MODE_TABS = ['local', 'worktree', 'cloud'] as const
 
@@ -18,7 +18,9 @@ export default function Composer() {
   const [isListening, setIsListening] = useState(false)
   const [attachments, setAttachments] = useState<Attachment[]>([])
   const [workDir, setWorkDir] = useState<string | null>(null)
+  const [interimText, setInterimText] = useState('')
   const recognitionRef = useRef<any>(null)
+  const baseTextRef = useRef('')
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const {
     activeMode, setActiveMode, addThread, addMessage, activeThreadId,
@@ -44,27 +46,51 @@ export default function Composer() {
     if (isListening) {
       recognitionRef.current?.stop()
       setIsListening(false)
+      setInterimText('')
       return
     }
     const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition
-    if (!SR) return
+    if (!SR) {
+      console.warn('Speech Recognition API not available')
+      return
+    }
+    baseTextRef.current = text
     const recognition = new SR()
     recognition.lang = 'en-US'
     recognition.interimResults = true
     recognition.continuous = true
     recognition.onresult = (event: any) => {
-      let transcript = ''
+      let finalText = ''
+      let interim = ''
       for (let i = 0; i < event.results.length; i++) {
-        transcript += event.results[i][0].transcript
+        const result = event.results[i]
+        if (result.isFinal) {
+          finalText += result[0].transcript
+        } else {
+          interim += result[0].transcript
+        }
       }
-      setText(transcript)
+      const base = baseTextRef.current
+      if (finalText) {
+        const combined = base ? base + ' ' + finalText.trim() : finalText.trim()
+        setText(combined)
+        baseTextRef.current = combined
+      }
+      setInterimText(interim)
     }
-    recognition.onend = () => setIsListening(false)
-    recognition.onerror = () => setIsListening(false)
+    recognition.onend = () => {
+      setIsListening(false)
+      setInterimText('')
+    }
+    recognition.onerror = (e: any) => {
+      console.warn('Speech recognition error:', e.error)
+      setIsListening(false)
+      setInterimText('')
+    }
     recognitionRef.current = recognition
     recognition.start()
     setIsListening(true)
-  }, [isListening])
+  }, [isListening, text])
 
   useEffect(() => {
     return () => recognitionRef.current?.stop()
@@ -278,13 +304,25 @@ export default function Composer() {
           ref={textareaRef}
           className="w-full bg-transparent border-none outline-none px-3.5 py-3 text-sm text-codebox-primary placeholder:text-codebox-muted resize-none"
           style={{ minHeight: 40 }}
-          placeholder={isStreaming ? 'Waiting for response...' : 'Ask anything or click mic for voice orb...'}
+          placeholder={isStreaming ? 'Waiting for response...' : isListening ? 'Listening... speak now' : 'Ask anything or click mic for voice input...'}
           rows={1}
-          value={text}
+          value={isListening && interimText ? text + ' ' + interimText : text}
           onChange={handleInput}
           onKeyDown={handleKeyDown}
           disabled={isStreaming}
         />
+        {isListening && (
+          <div className="flex items-center gap-2 px-3.5 pb-1.5">
+            <span className="flex gap-0.5 items-end h-3">
+              <span className="w-0.5 h-2 bg-codebox-red rounded-full animate-pulse" style={{ animationDelay: '0ms' }} />
+              <span className="w-0.5 h-3 bg-codebox-red rounded-full animate-pulse" style={{ animationDelay: '100ms' }} />
+              <span className="w-0.5 h-1.5 bg-codebox-red rounded-full animate-pulse" style={{ animationDelay: '200ms' }} />
+              <span className="w-0.5 h-2.5 bg-codebox-red rounded-full animate-pulse" style={{ animationDelay: '300ms' }} />
+            </span>
+            <span className="text-[11px] text-codebox-red font-medium">Recording</span>
+            <span className="text-[11px] text-codebox-muted">— tap stop when done, then edit or send</span>
+          </div>
+        )}
         <div className="flex items-center justify-between px-3.5 pb-3 pt-1">
           <div className="flex items-center gap-0.5">
             <button
@@ -309,11 +347,15 @@ export default function Composer() {
               <Folder size={18} />
             </button>
             <button
-              className={`bg-transparent border-none cursor-pointer p-[6px] rounded-md hover:bg-white/5 transition-all ${isListening ? 'text-codebox-red bg-codebox-red/10 animate-pulse' : 'text-codebox-secondary hover:text-codebox-primary'}`}
-              title={isListening ? 'Stop voice input' : 'Voice input'}
+              className={`bg-transparent border-none cursor-pointer p-[6px] rounded-md transition-all ${isListening ? 'text-codebox-red bg-codebox-red/10' : 'text-codebox-secondary hover:text-codebox-primary hover:bg-white/5'}`}
+              title={isListening ? 'Stop recording' : 'Voice input (speech to text)'}
               onClick={toggleMic}
             >
-              {isListening ? <Square size={16} /> : <Mic size={18} />}
+              {isListening ? (
+                <span className="w-3.5 h-3.5 rounded-full bg-codebox-red inline-block animate-pulse" />
+              ) : (
+                <Mic size={18} />
+              )}
             </button>
           </div>
 
